@@ -402,11 +402,10 @@ tr:hover td{background:rgba(83,194,177,0.04);}
       <div class="summary-row">
         <div class="sum-card"><div class="sum-label">Entries Today</div><div class="sum-val" id="sumEntries">0</div></div>
         <div class="sum-card"><div class="sum-label">Time Logged Today</div><div class="sum-val" id="sumTime">0m</div></div>
-        <div class="sum-card sum-card-submit" onclick="openSubmit()" style="cursor:pointer;">
-          <div class="sum-label">Submit Log</div>
-          <div class="sum-val" id="submitCount" style="font-size:18px;display:flex;align-items:center;gap:8px;">
-            <span id="submitCountNum">0</span><span style="font-size:13px;font-weight:400;color:var(--text-muted);">unsubmitted</span>
-          </div>
+        <div class="sum-card sum-card-submit" onclick="openSubmit()" style="cursor:pointer;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:6px;">
+          <div style="font-family:var(--font-head);font-size:15px;font-weight:800;color:var(--teal);letter-spacing:1px;text-transform:uppercase;">Submit Log</div>
+          <div style="font-size:11px;color:var(--text-muted);">Send <span id="submitCountNum" style="color:var(--teal);font-weight:700;">0</span> entries to master log</div>
+          <div style="margin-top:4px;background:var(--teal);color:#0A2F4A;font-family:var(--font-head);font-size:10px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;padding:5px 16px;border-radius:20px;">Download CSV</div>
         </div>
       </div>
     </div>
