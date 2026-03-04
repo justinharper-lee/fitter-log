@@ -252,18 +252,9 @@
   <!-- SYNC + STATUS -->
   <div class="sync-pill" id="syncPill"><div class="sdot"></div><span id="syncText">Local mode</span></div>
 
-  <div class="status-bar" id="statusBar">
-    <div class="status-dot"></div>
-    <div class="status-text" id="statusText">Clocked Out</div>
-    <div class="status-task" id="statusTask">No active task</div>
-    <div class="status-elapsed" id="statusElapsed"></div>
-  </div>
 
-  <!-- MODE TABS -->
-  <div class="mode-tabs">
-    <div class="mode-tab active" id="tab-live" onclick="switchMode('live')">⏱ Live Entry</div>
-    <div class="mode-tab" id="tab-manual" onclick="switchMode('manual')">✏️ Manual Entry</div>
-  </div>
+
+
 
   <div class="main-grid">
 
@@ -271,7 +262,7 @@
     <div class="panel">
       <div class="panel-header">
         <div class="panel-header-dot"></div>
-        <span class="panel-title" id="formPanelTitle">Live Task</span>
+        <span class="panel-title">Manual Entry</span>
       </div>
       <div class="panel-body">
 
@@ -294,7 +285,7 @@
         </div>
 
         <!-- MANUAL DATE/TIME (manual mode only) -->
-        <div id="manualTimeFields" style="display:none;flex-direction:column;gap:12px;">
+        <div id="manualTimeFields" style="display:flex;flex-direction:column;gap:12px;">
           <div class="section-label">Date &amp; Time</div>
           <div class="field">
             <label>Date <span class="req">*</span></label>
@@ -390,14 +381,10 @@
           <textarea id="addlNotes" placeholder="Optional…"></textarea>
         </div>
 
-        <!-- LIVE BUTTONS -->
-        <div class="btn-row" id="liveBtns">
-          <button class="btn btn-start" id="btnStart" onclick="startTask()">▶ Start Task</button>
-          <button class="btn btn-end" id="btnEnd" disabled onclick="endTask()">■ End Task</button>
-        </div>
+
 
         <!-- MANUAL SAVE BUTTON -->
-        <button class="btn btn-save" id="manualBtn" style="display:none;" onclick="saveManual()">💾 Save Entry</button>
+        <button class="btn btn-save" id="manualBtn" onclick="saveManual()">💾 Save Entry</button>
 
       </div>
     </div>
@@ -475,6 +462,7 @@ function init() {
     document.getElementById('setupOverlay').classList.add('hidden');
     applyUserSettings();
   }
+  switchMode('manual');
   updateClock();
   setInterval(updateClock, 1000);
   renderLog();
@@ -561,12 +549,10 @@ function setDefaultManualDate() {
 // ── MODE ──
 function switchMode(mode) {
   state.mode = mode;
-  document.getElementById('tab-live').classList.toggle('active', mode==='live');
-  document.getElementById('tab-manual').classList.toggle('active', mode==='manual');
-  document.getElementById('formPanelTitle').textContent = mode==='live'?'Live Task':'Manual Entry';
-  document.getElementById('manualTimeFields').style.display = mode==='manual'?'flex':'none';
-  document.getElementById('liveBtns').style.display   = mode==='live'  ?'grid':'none';
-  document.getElementById('manualBtn').style.display  = mode==='manual'?'block':'none';
+  const manualFields = document.getElementById('manualTimeFields');
+  const manualBtn    = document.getElementById('manualBtn');
+  if (manualFields) manualFields.style.display = 'flex';
+  if (manualBtn)    manualBtn.style.display    = 'block';
   clearErrors();
 }
 
@@ -636,7 +622,7 @@ function validateCommon() {
 }
 
 // ── LIVE MODE ──
-function startTask() {
+function startTask() { return;
   if (state.active) { toast('warning','Already Running','End the current task first.'); return; }
   if (!validateCommon()) { toast('error','Missing Fields','Fill in all required fields.'); return; }
 
@@ -661,7 +647,7 @@ function startTask() {
   toast('success','Task Started',`${state.ahCode} — ${fmtTime(now)}`);
 }
 
-function endTask() {
+function endTask() { return;
   if (!state.active) { toast('error','No Active Task','Use Start Task first.'); return; }
   if (!validateCommon()) { toast('error','Missing Fields','Fill in all required fields.'); return; }
 
@@ -903,14 +889,8 @@ function exportCSV() {
 // ── RESET/CLEAR ──
 function resetForm() {
   state.active=false; state.startTime=null; state.ahCode=null;
-  document.getElementById('ahCode').disabled=false;
-  document.getElementById('statusBar').classList.remove('active');
-  document.getElementById('statusText').textContent='Clocked Out';
-  document.getElementById('statusTask').textContent='No active task';
-  document.getElementById('statusElapsed').textContent='';
-  document.getElementById('btnStart').disabled=false;
-  const eb=document.getElementById('btnEnd');
-  eb.disabled=true; eb.classList.remove('ready');
+  const ahCode = document.getElementById('ahCode');
+  if (ahCode) ahCode.disabled=false;
   clearForm();
 }
 
@@ -947,12 +927,7 @@ function updateClock() {
   document.getElementById('liveClock').textContent=fmtTime(now);
   document.getElementById('liveDate').textContent=
     now.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'}).toUpperCase();
-  if (state.active&&state.startTime) {
-    const sec=Math.floor((now-state.startTime)/1000);
-    const h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60),s=sec%60;
-    document.getElementById('statusElapsed').textContent=
-      h>0?`${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`:`${m}:${String(s).padStart(2,'0')}`;
-  }
+
 }
 
 function toast(type,title,msg) {
