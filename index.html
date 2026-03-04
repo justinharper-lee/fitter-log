@@ -391,6 +391,7 @@ tr:hover td{background:rgba(83,194,177,0.04);}
           <option value="AH2508">Out of Office</option>
         </select>
         <button class="btn-history" onclick="openHistory()">Previous Days</button>
+        <button class="btn-submit" onclick="openSubmit()">Submit Log <span class="submit-count" id="submitCount">0</span></button>
         <button class="btn-export" onclick="exportCSV()">Export CSV</button>
       </div>
       <div class="table-wrap">
@@ -408,6 +409,118 @@ tr:hover td{background:rgba(83,194,177,0.04);}
   </div>
 </div>
 
+
+<!-- EDIT MODAL -->
+<div class="overlay hidden" id="editOverlay">
+  <div class="edit-box">
+    <div class="edit-header">
+      <div class="edit-title">Edit Entry</div>
+      <button class="edit-close" onclick="closeEdit()">x</button>
+    </div>
+    <div class="edit-body">
+      <div class="field">
+        <label>AH Code <span class="req">*</span></label>
+        <select id="editAhCode" onchange="onEditAHChange()">
+          <option value="">-- Select AH Code --</option>
+          <option value="AH2500-Training">AH2500 -- Training</option>
+          <option value="AH2501-Travel">AH2501 -- Travel</option>
+          <option value="AH2502-On-Site/Idle">AH2502 -- On-Site / Idle</option>
+          <option value="AH2503-Patient Fitting">AH2503 -- Patient Fitting</option>
+          <option value="AH2504-Paperwork/Documentation">AH2504 -- Paperwork / Documentation</option>
+          <option value="AH2505-Misc">AH2505 -- Misc</option>
+          <option value="AH2506-Inventory">AH2506 -- Inventory</option>
+          <option value="AH2507-Break/Lunch">AH2507 -- Break / Lunch</option>
+          <option value="AH2508-Out of Office">AH2508 -- Out of Office</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Date <span class="req">*</span></label>
+        <input type="date" id="editDate">
+      </div>
+      <div class="field">
+        <label>Start Time <span class="req">*</span></label>
+        <div class="time-picker">
+          <select id="editStartHr"></select>
+          <select id="editStartMin"></select>
+          <select id="editStartAmPm"><option>AM</option><option>PM</option></select>
+        </div>
+      </div>
+      <div class="field">
+        <label>End Time <span class="req">*</span></label>
+        <div class="time-picker">
+          <select id="editEndHr"></select>
+          <select id="editEndMin"></select>
+          <select id="editEndAmPm"><option>AM</option><option>PM</option></select>
+        </div>
+      </div>
+      <div class="cond" id="edit-cond-facility">
+        <div class="section-label">Facility</div>
+        <div class="field">
+          <label>Facility <span class="req">*</span></label>
+          <select id="editFacility"><option value="">-- Select Facility --</option></select>
+        </div>
+      </div>
+      <div class="cond" id="edit-cond-patient">
+        <div class="section-label">Clinical Details</div>
+        <div class="field">
+          <label>Doctor <span class="req">*</span></label>
+          <input type="text" id="editDoctor" placeholder="Dr. Last Name">
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>HCPC Code <span class="req">*</span></label>
+            <select id="editHcpc"><option value="">-- Select --</option></select>
+          </div>
+          <div class="field">
+            <label>QTY <span class="req">*</span></label>
+            <input type="number" id="editQty" min="1">
+          </div>
+        </div>
+        <div class="field">
+          <label>Item Name</label>
+          <input type="text" id="editItemName">
+        </div>
+        <div class="section-label">Patient Information</div>
+        <div class="field-row">
+          <div class="field">
+            <label>Patient Name</label>
+            <input type="text" id="editPatientName">
+          </div>
+          <div class="field">
+            <label>Patient DOB</label>
+            <input type="date" id="editPatientDob">
+          </div>
+        </div>
+        <div class="cb-row">
+          <label class="cb-item" id="edit-cb-fitterNote"><input type="checkbox" id="editFitterNote" onchange="updateCb('edit-cb-fitterNote','editFitterNote')"><span>Fitter Note</span></label>
+          <label class="cb-item" id="edit-cb-par"><input type="checkbox" id="editPar" onchange="updateCb('edit-cb-par','editPar')"><span>PAR</span></label>
+          <label class="cb-item" id="edit-cb-onCall"><input type="checkbox" id="editOnCall" onchange="updateCb('edit-cb-onCall','editOnCall')"><span>On-Call</span></label>
+        </div>
+      </div>
+      <div class="field">
+        <label>Additional Notes</label>
+        <textarea id="editNotes"></textarea>
+      </div>
+    </div>
+    <div class="edit-footer">
+      <button class="btn-edit-delete" onclick="deleteEntry()">Delete Entry</button>
+      <button class="btn-edit-cancel" onclick="closeEdit()">Cancel</button>
+      <button class="btn-edit-save" onclick="saveEdit()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- SUBMIT CONFIRM MODAL -->
+<div class="overlay hidden" id="submitOverlay">
+  <div class="setup-box" style="max-width:480px;">
+    <h2 style="margin-bottom:12px;">Submit Log</h2>
+    <p style="margin-bottom:20px;">This will mark <strong id="submitCountLabel" style="color:var(--teal)"></strong> unsubmitted entries as submitted and download them as a CSV for the master log.<br><br>Submitted entries cannot be edited.</p>
+    <div style="display:flex;gap:10px;">
+      <button class="btn-edit-cancel" style="flex:1;" onclick="document.getElementById('submitOverlay').classList.add('hidden')">Cancel</button>
+      <button class="btn-setup" style="flex:1;" onclick="confirmSubmit()">Submit and Download</button>
+    </div>
+  </div>
+</div>
 <div class="toast-wrap" id="toastWrap"></div>
 
 <script>
@@ -433,6 +546,7 @@ var state = {
 
 function init() {
   populateTimeSelectors();
+  populateEditTimeSelectors();
   populateHCPC();
   document.getElementById('manualDate').value = new Date().toISOString().split('T')[0];
   if (!state.userName || !state.userLocation) {
@@ -496,6 +610,26 @@ function populateHCPC() {
     var o = document.createElement('option');
     o.value = o.textContent = h;
     sel.appendChild(o);
+  });
+}
+
+function populateEditTimeSelectors() {
+  ['editStartHr','editEndHr'].forEach(function(id) {
+    var sel = document.getElementById(id);
+    for (var h = 1; h <= 12; h++) {
+      var o = document.createElement('option');
+      o.value = o.textContent = String(h);
+      if (h === 8) o.selected = true;
+      sel.appendChild(o);
+    }
+  });
+  ['editStartMin','editEndMin'].forEach(function(id) {
+    var sel = document.getElementById(id);
+    for (var m = 0; m < 60; m += 5) {
+      var o = document.createElement('option');
+      o.value = o.textContent = String(m).padStart(2,'0');
+      sel.appendChild(o);
+    }
   });
 }
 
@@ -703,8 +837,11 @@ function renderLog() {
     var code = r.ahCode.match(/AH[0-9]+/);
     var badge = code ? code[0] : r.ahCode;
     var cls = r.ahCode.indexOf('2503') >= 0 ? 'fit' : r.ahCode.indexOf('2502') >= 0 ? 'idl' : r.ahCode.indexOf('2501') >= 0 ? 'trv' : '';
-    return '<tr class="' + (r.isIdle ? 'row-idle' : '') + '">' +
-      '<td>' + r.date + '</td>' +
+    var rowCls = r.isIdle ? 'row-idle' : r.submitted ? 'row-submitted' : '';
+    var click = r.submitted ? '' : 'onclick="openEdit(\'' + r.id + '\')"';
+    var lock = r.submitted ? '<span class="lock-icon">locked</span>' : '';
+    return '<tr class="' + rowCls + '" ' + click + '>' +
+      '<td>' + r.date + lock + '</td>' +
       '<td><span class="ah-badge ' + cls + '">' + badge + '</span></td>' +
       '<td>' + r.startTime + '</td><td>' + r.endTime + '</td>' +
       '<td class="dur-cell">' + r.duration + '</td>' +
@@ -713,6 +850,7 @@ function renderLog() {
       '<td style="max-width:110px;overflow:hidden;text-overflow:ellipsis">' + (r.addlNotes||'--') + '</td>' +
       '</tr>';
   }).join('');
+  updateSubmitCount();
 }
 
 function renderSummary() {
@@ -795,11 +933,11 @@ function historyLastWeek() {
   loadHistory();
 }
 
-function localDateStr(dt) {
-  var y = dt.getFullYear();
-  var m = String(dt.getMonth()+1).padStart(2,'0');
-  var d = String(dt.getDate()).padStart(2,'0');
-  return y + '-' + m + '-' + d;
+function isoToLocale(iso) {
+  // Convert "2026-03-04" to Date then to "3/4/2026" to match r.date
+  var parts = iso.split('-');
+  var d = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
+  return d.toLocaleDateString('en-US');
 }
 
 function loadHistory() {
@@ -807,13 +945,14 @@ function loadHistory() {
   if (state.historyMode === 'single') {
     var d = document.getElementById('historySingleDate').value;
     if (d) {
-      rows = rows.filter(function(r) { return localDateStr(new Date(r.startISO)) === d; });
+      var target = isoToLocale(d);
+      rows = rows.filter(function(r) { return r.date === target; });
     }
   } else {
     var df = document.getElementById('historyDateFrom').value;
     var dt = document.getElementById('historyDateTo').value;
-    if (df) rows = rows.filter(function(r) { return localDateStr(new Date(r.startISO)) >= df; });
-    if (dt) rows = rows.filter(function(r) { return localDateStr(new Date(r.startISO)) <= dt; });
+    if (df) { var fromLocale = isoToLocale(df); rows = rows.filter(function(r) { return new Date(r.date) >= new Date(fromLocale); }); }
+    if (dt) { var toLocale   = isoToLocale(dt); rows = rows.filter(function(r) { return new Date(r.date) <= new Date(toLocale); }); }
   }
   rows = rows.slice().reverse();
   var tbody = document.getElementById('historyBody');
@@ -846,12 +985,12 @@ function exportHistoryCSV() {
   var rows = state.log.filter(function(r) { return r.fitter === state.userName; });
   if (state.historyMode === 'single') {
     var d = document.getElementById('historySingleDate').value;
-    if (d) rows = rows.filter(function(r) { return localDateStr(new Date(r.startISO)) === d; });
+    if (d) { var target = isoToLocale(d); rows = rows.filter(function(r) { return r.date === target; }); }
   } else {
     var df = document.getElementById('historyDateFrom').value;
     var dt = document.getElementById('historyDateTo').value;
-    if (df) rows = rows.filter(function(r) { return localDateStr(new Date(r.startISO)) >= df; });
-    if (dt) rows = rows.filter(function(r) { return localDateStr(new Date(r.startISO)) <= dt; });
+    if (df) { var fl = isoToLocale(df); rows = rows.filter(function(r) { return new Date(r.date) >= new Date(fl); }); }
+    if (dt) { var tl = isoToLocale(dt); rows = rows.filter(function(r) { return new Date(r.date) <= new Date(tl); }); }
   }
   if (!rows.length) { toast('warning', 'Nothing to Export', 'No entries in this period.'); return; }
   var cols = ['Fitter','AH_Code','Entry_Date','Start_Time','End_Time','Duration','Facility','Doctor','HCPC','Item_Name','QTY','Patient_Name','Patient_DOB','Fitter_Note','PAR','On_Call','Additional_Notes','Location'];
@@ -890,6 +1029,207 @@ function toast(type, title, msg) {
   el.innerHTML = '<span class="toast-icon">' + icons[type] + '</span><div class="toast-msg"><strong>' + title + '</strong>' + msg + '</div>';
   wrap.appendChild(el);
   setTimeout(function() { el.remove(); }, 3500);
+}
+
+
+// ── SUBMIT COUNT ──
+function updateSubmitCount() {
+  var count = state.log.filter(function(r) { return !r.submitted; }).length;
+  var el = document.getElementById('submitCount');
+  if (el) el.textContent = count;
+}
+
+// ── SUBMIT LOG ──
+function openSubmit() {
+  var unsubmitted = state.log.filter(function(r) { return !r.submitted; });
+  if (!unsubmitted.length) { toast('warning', 'Nothing to Submit', 'All entries have already been submitted.'); return; }
+  document.getElementById('submitCountLabel').textContent = unsubmitted.length + ' entry' + (unsubmitted.length > 1 ? 'ies' : 'y');
+  document.getElementById('submitOverlay').classList.remove('hidden');
+}
+
+function confirmSubmit() {
+  var unsubmitted = state.log.filter(function(r) { return !r.submitted; });
+  if (!unsubmitted.length) return;
+  // Export CSV first
+  var cols = ['Fitter','AH_Code','Entry_Date','Start_Time','End_Time','Duration','Facility','Doctor','HCPC','Item_Name','QTY','Patient_Name','Patient_DOB','Fitter_Note','PAR','On_Call','Additional_Notes','Location'];
+  var data = unsubmitted.map(function(e) {
+    return [e.fitter,e.ahCode,e.date,e.startTime,e.endTime,e.durationMin,e.facility,e.doctor,e.hcpc,e.itemName,e.qty,e.patientName,e.patientDob,e.fitterNote?'Yes':'No',e.par?'Yes':'No',e.onCall?'Yes':'No',e.addlNotes,e.location];
+  });
+  var csv = cols.join(',') + "\n";
+  data.forEach(function(r) { csv += r.map(function(v) { return '"' + String(v||'').replace(/"/g,'""') + '"'; }).join(',') + "\n"; });
+  var blob = new Blob([csv], {type:'text/csv'});
+  var url  = URL.createObjectURL(blob);
+  var a    = document.createElement('a');
+  a.href = url;
+  a.download = 'FitterLog_Submit_' + state.userName.replace(' ','_') + '_' + new Date().toISOString().split('T')[0] + '.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+  // Mark as submitted
+  state.log = state.log.map(function(r) {
+    if (!r.submitted) r.submitted = true;
+    return r;
+  });
+  saveLog();
+  document.getElementById('submitOverlay').classList.add('hidden');
+  renderLog();
+  renderSummary();
+  toast('success', 'Log Submitted', unsubmitted.length + ' entries submitted and downloaded.');
+}
+
+// ── EDIT MODAL ──
+var editingId = null;
+
+function openEdit(id) {
+  var entry = state.log.find(function(r) { return String(r.id) === String(id); });
+  if (!entry || entry.submitted) return;
+  editingId = id;
+
+  // Populate edit form
+  document.getElementById('editAhCode').value = entry.ahCode;
+  // Convert date from "3/4/2026" back to "2026-03-04"
+  var dp = new Date(entry.date);
+  var y = dp.getFullYear(), m = String(dp.getMonth()+1).padStart(2,'0'), d = String(dp.getDate()).padStart(2,'0');
+  document.getElementById('editDate').value = y + '-' + m + '-' + d;
+
+  // Parse start time
+  var st = parseTime12(entry.startTime);
+  document.getElementById('editStartHr').value   = st.hr;
+  document.getElementById('editStartMin').value  = st.min;
+  document.getElementById('editStartAmPm').value = st.ampm;
+
+  // Parse end time
+  var et = parseTime12(entry.endTime);
+  document.getElementById('editEndHr').value   = et.hr;
+  document.getElementById('editEndMin').value  = et.min;
+  document.getElementById('editEndAmPm').value = et.ampm;
+
+  // Facility
+  populateEditFacilities();
+  document.getElementById('editFacility').value  = entry.facility || '';
+  document.getElementById('editDoctor').value    = entry.doctor || '';
+  document.getElementById('editHcpc').value      = entry.hcpc || '';
+  document.getElementById('editQty').value       = entry.qty || '';
+  document.getElementById('editItemName').value  = entry.itemName || '';
+  document.getElementById('editPatientName').value = entry.patientName || '';
+  document.getElementById('editPatientDob').value  = entry.patientDob || '';
+  document.getElementById('editFitterNote').checked = entry.fitterNote || false;
+  document.getElementById('editPar').checked        = entry.par || false;
+  document.getElementById('editOnCall').checked     = entry.onCall || false;
+  document.getElementById('editNotes').value        = entry.addlNotes || '';
+
+  ['edit-cb-fitterNote','edit-cb-par','edit-cb-onCall'].forEach(function(id) { document.getElementById(id).classList.remove('checked'); });
+  if (entry.fitterNote) document.getElementById('edit-cb-fitterNote').classList.add('checked');
+  if (entry.par)        document.getElementById('edit-cb-par').classList.add('checked');
+  if (entry.onCall)     document.getElementById('edit-cb-onCall').classList.add('checked');
+
+  onEditAHChange();
+  document.getElementById('editOverlay').classList.remove('hidden');
+}
+
+function closeEdit() {
+  editingId = null;
+  document.getElementById('editOverlay').classList.add('hidden');
+}
+
+function parseTime12(timeStr) {
+  var match = timeStr.match(/(\d+):(\d+)\s*(AM|PM)/i);
+  if (!match) return {hr:'8',min:'00',ampm:'AM'};
+  return { hr: String(parseInt(match[1])), min: match[2], ampm: match[3].toUpperCase() };
+}
+
+function populateEditFacilities() {
+  var sel = document.getElementById('editFacility');
+  sel.innerHTML = '<option value="">-- Select Facility --</option>';
+  var facs = FACILITIES[state.userLocation] || [];
+  facs.forEach(function(f) {
+    var o = document.createElement('option');
+    o.value = o.textContent = f;
+    sel.appendChild(o);
+  });
+}
+
+function populateEditHCPC() {
+  var sel = document.getElementById('editHcpc');
+  if (sel.options.length > 1) return;
+  HCPC_CODES.forEach(function(h) {
+    var o = document.createElement('option');
+    o.value = o.textContent = h;
+    sel.appendChild(o);
+  });
+}
+
+function onEditAHChange() {
+  var v    = document.getElementById('editAhCode').value;
+  var code = v.split('-')[0];
+  var showFac = (code === 'AH2503' || code === 'AH2506');
+  var showPat = (code === 'AH2503');
+  document.getElementById('edit-cond-facility').classList.toggle('vis', showFac);
+  document.getElementById('edit-cond-patient').classList.toggle('vis', showPat);
+  if (showPat) populateEditHCPC();
+}
+
+function saveEdit() {
+  var idx = state.log.findIndex(function(r) { return String(r.id) === String(editingId); });
+  if (idx < 0) { toast('error','Error','Entry not found.'); return; }
+
+  var ah      = document.getElementById('editAhCode').value;
+  var code    = ah.split('-')[0];
+  var dateVal = document.getElementById('editDate').value;
+  if (!ah || !dateVal) { toast('error','Missing Fields','AH Code and Date are required.'); return; }
+
+  var startISO = buildEditDT(dateVal, 'editStart');
+  var endISO   = buildEditDT(dateVal, 'editEnd');
+  var startDt  = new Date(startISO);
+  var endDt    = new Date(endISO);
+  if (endDt <= startDt) { toast('error','Invalid Times','End must be after start.'); return; }
+
+  var elapsed = (endDt - startDt) / 1000;
+  var entry   = state.log[idx];
+
+  entry.ahCode      = ah;
+  entry.date        = startDt.toLocaleDateString('en-US');
+  entry.startTime   = fmtTime(startDt);
+  entry.endTime     = fmtTime(endDt);
+  entry.startISO    = startDt.toISOString();
+  entry.endISO      = endDt.toISOString();
+  entry.duration    = fmtDur(elapsed);
+  entry.durationMin = Math.round(elapsed / 60);
+  entry.facility    = (code === 'AH2503' || code === 'AH2506') ? document.getElementById('editFacility').value : '';
+  entry.doctor      = code === 'AH2503' ? document.getElementById('editDoctor').value : '';
+  entry.hcpc        = code === 'AH2503' ? document.getElementById('editHcpc').value : '';
+  entry.qty         = code === 'AH2503' ? document.getElementById('editQty').value : '';
+  entry.itemName    = code === 'AH2503' ? document.getElementById('editItemName').value : '';
+  entry.patientName = code === 'AH2503' ? document.getElementById('editPatientName').value : '';
+  entry.patientDob  = code === 'AH2503' ? document.getElementById('editPatientDob').value : '';
+  entry.fitterNote  = document.getElementById('editFitterNote').checked;
+  entry.par         = document.getElementById('editPar').checked;
+  entry.onCall      = document.getElementById('editOnCall').checked;
+  entry.addlNotes   = document.getElementById('editNotes').value;
+
+  saveLog();
+  closeEdit();
+  renderLog();
+  renderSummary();
+  toast('success','Entry Updated','Changes saved.');
+}
+
+function deleteEntry() {
+  if (!confirm('Delete this entry? This cannot be undone.')) return;
+  state.log = state.log.filter(function(r) { return String(r.id) !== String(editingId); });
+  saveLog();
+  closeEdit();
+  renderLog();
+  renderSummary();
+  toast('success','Deleted','Entry removed.');
+}
+
+function buildEditDT(dateStr, which) {
+  var hr   = parseInt(document.getElementById(which + 'Hr').value);
+  var min  = document.getElementById(which + 'Min').value;
+  var ampm = document.getElementById(which + 'AmPm').value;
+  var h24  = hr % 12;
+  if (ampm === 'PM') h24 += 12;
+  return dateStr + 'T' + String(h24).padStart(2,'0') + ':' + min + ':00';
 }
 
 init();
