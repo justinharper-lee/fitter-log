@@ -391,7 +391,6 @@ tr:hover td{background:rgba(83,194,177,0.04);}
           <option value="AH2508">Out of Office</option>
         </select>
         <button class="btn-history" onclick="openHistory()">Previous Days</button>
-        <button class="btn-submit" onclick="openSubmit()">Submit Log <span class="submit-count" id="submitCount">0</span></button>
         <button class="btn-export" onclick="exportCSV()">Export CSV</button>
       </div>
       <div class="table-wrap">
@@ -403,7 +402,12 @@ tr:hover td{background:rgba(83,194,177,0.04);}
       <div class="summary-row">
         <div class="sum-card"><div class="sum-label">Entries Today</div><div class="sum-val" id="sumEntries">0</div></div>
         <div class="sum-card"><div class="sum-label">Time Logged Today</div><div class="sum-val" id="sumTime">0m</div></div>
-        <div class="sum-card"><div class="sum-label">Fittings Today</div><div class="sum-val" id="sumFittings">0</div></div>
+        <div class="sum-card sum-card-submit" onclick="openSubmit()" style="cursor:pointer;">
+          <div class="sum-label">Submit Log</div>
+          <div class="sum-val" id="submitCount" style="font-size:18px;display:flex;align-items:center;gap:8px;">
+            <span id="submitCountNum">0</span><span style="font-size:13px;font-weight:400;color:var(--text-muted);">unsubmitted</span>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -837,11 +841,9 @@ function renderLog() {
     var code = r.ahCode.match(/AH[0-9]+/);
     var badge = code ? code[0] : r.ahCode;
     var cls = r.ahCode.indexOf('2503') >= 0 ? 'fit' : r.ahCode.indexOf('2502') >= 0 ? 'idl' : r.ahCode.indexOf('2501') >= 0 ? 'trv' : '';
-    var rowCls = r.isIdle ? 'row-idle' : r.submitted ? 'row-submitted' : '';
-    var click = r.submitted ? '' : 'onclick="openEdit(\'' + r.id + '\')"';
-    var lock = r.submitted ? '<span class="lock-icon">locked</span>' : '';
-    return '<tr class="' + rowCls + '" ' + click + '>' +
-      '<td>' + r.date + lock + '</td>' +
+    var rowCls = r.isIdle ? 'row-idle' : '';
+    return '<tr class="' + rowCls + '" onclick="openEdit(\'' + r.id + '\')">' +
+      '<td>' + r.date + '</td>' +
       '<td><span class="ah-badge ' + cls + '">' + badge + '</span></td>' +
       '<td>' + r.startTime + '</td><td>' + r.endTime + '</td>' +
       '<td class="dur-cell">' + r.duration + '</td>' +
@@ -860,7 +862,7 @@ function renderSummary() {
   var fittings = tLog.filter(function(r) { return r.ahCode.indexOf('2503') >= 0; }).length;
   var mins     = tLog.filter(function(r) { return !r.isIdle; }).reduce(function(a,r) { return a + (r.durationMin||0); }, 0);
   document.getElementById('sumEntries').textContent  = entries;
-  document.getElementById('sumFittings').textContent = fittings;
+
   document.getElementById('sumTime').textContent     = fmtDur(mins * 60);
 }
 
@@ -1035,7 +1037,7 @@ function toast(type, title, msg) {
 // ── SUBMIT COUNT ──
 function updateSubmitCount() {
   var count = state.log.filter(function(r) { return !r.submitted; }).length;
-  var el = document.getElementById('submitCount');
+  var el = document.getElementById('submitCountNum');
   if (el) el.textContent = count;
 }
 
@@ -1064,16 +1066,13 @@ function confirmSubmit() {
   a.download = 'FitterLog_Submit_' + state.userName.replace(' ','_') + '_' + new Date().toISOString().split('T')[0] + '.csv';
   a.click();
   URL.revokeObjectURL(url);
-  // Mark as submitted
-  state.log = state.log.map(function(r) {
-    if (!r.submitted) r.submitted = true;
-    return r;
-  });
+  // Clear submitted entries from local log
+  state.log = state.log.filter(function(r) { return r.submitted; });
   saveLog();
   document.getElementById('submitOverlay').classList.add('hidden');
   renderLog();
   renderSummary();
-  toast('success', 'Log Submitted', unsubmitted.length + ' entries submitted and downloaded.');
+  toast('success', 'Log Submitted', unsubmitted.length + ' entries downloaded and cleared.');
 }
 
 // ── EDIT MODAL ──
@@ -1081,7 +1080,7 @@ var editingId = null;
 
 function openEdit(id) {
   var entry = state.log.find(function(r) { return String(r.id) === String(id); });
-  if (!entry || entry.submitted) return;
+  if (!entry) return;
   editingId = id;
 
   // Populate edit form
