@@ -103,6 +103,22 @@ tr:hover td{background:rgba(83,194,177,0.04);}
 .ah-badge.fit{background:var(--teal-dim);border-color:rgba(83,194,177,0.4);color:var(--teal);}
 .ah-badge.trv{background:rgba(255,181,71,0.1);border-color:rgba(255,181,71,0.3);color:var(--warn);}
 .ah-badge.idl{background:rgba(83,194,177,0.1);border-color:rgba(83,194,177,0.2);color:var(--teal);font-style:italic;}
+.ah-badge.mtg{background:rgba(178,200,27,0.12);border-color:rgba(178,200,27,0.35);color:var(--green);}
+
+/* HCPC COMBOBOX */
+.hcpc-wrap{position:relative;width:100%;}
+.hcpc-input{background:var(--bg2);border:1px solid var(--border2);border-radius:7px;color:#e8f4f8 !important;font-family:var(--font);font-size:12px;padding:9px 28px 9px 12px;outline:none;width:100%;transition:border-color 0.2s,box-shadow 0.2s;}
+.hcpc-input:focus{border-color:var(--teal);box-shadow:0 0 0 3px var(--teal-dim);}
+.hcpc-input.err{border-color:var(--danger) !important;box-shadow:0 0 0 3px var(--danger-dim);}
+.hcpc-input::placeholder{color:var(--text-muted);}
+.hcpc-arrow{position:absolute;right:9px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--text-muted);font-size:10px;}
+.hcpc-dropdown{position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--bg2);border:1px solid var(--teal);border-radius:8px;max-height:200px;overflow-y:auto;z-index:600;display:none;box-shadow:0 8px 28px rgba(0,0,0,0.5);}
+.hcpc-dropdown.open{display:block;}
+.hcpc-opt{padding:8px 13px;font-size:12px;color:var(--text-dim);cursor:pointer;transition:background 0.1s;}
+.hcpc-opt:hover,.hcpc-opt.kbd-active{background:var(--teal-dim);color:var(--teal);}
+.hcpc-opt.no-match{color:var(--text-muted);font-style:italic;cursor:default;}
+.hcpc-opt.no-match:hover{background:transparent;color:var(--text-muted);}
+.btn-save:disabled{opacity:0.5;cursor:not-allowed;}
 .dur-cell{color:var(--teal);font-weight:600;}
 .empty-log{padding:48px 20px;text-align:center;color:var(--text-muted);font-size:12px;}
 .empty-icon{font-size:32px;display:block;margin-bottom:10px;opacity:0.25;}
@@ -292,6 +308,8 @@ tr:hover td{background:rgba(83,194,177,0.04);}
             <option value="AH2506-Inventory">AH2506 -- Inventory</option>
             <option value="AH2507-Break/Lunch">AH2507 -- Break / Lunch</option>
             <option value="AH2508-Out of Office">AH2508 -- Out of Office</option>
+            <option value="AH2509-Meeting">AH2509 -- Meeting</option>
+            <option value="AH2509-Meeting">AH2509 -- Meeting</option>
           </select>
           <span class="ferr" id="ahCode-err">Please select an AH Code.</span>
         </div>
@@ -345,7 +363,15 @@ tr:hover td{background:rgba(83,194,177,0.04);}
           <div class="field-row">
             <div class="field">
               <label>HCPC Code <span class="req">*</span></label>
-              <select id="hcpc"><option value="">-- Select --</option></select>
+              <div class="hcpc-wrap" id="hcpcWrap">
+                <input type="text" class="hcpc-input" id="hcpcSearch" placeholder="Type to search HCPC..." autocomplete="off"
+                  onfocus="openHcpc('hcpcSearch','hcpcDrop','hcpc')"
+                  oninput="filterHcpc('hcpcSearch','hcpcDrop','hcpc')"
+                  onkeydown="hcpcKeydown(event,'hcpcSearch','hcpcDrop','hcpc')">
+                <span class="hcpc-arrow">&#9660;</span>
+                <div class="hcpc-dropdown" id="hcpcDrop"></div>
+                <input type="hidden" id="hcpc">
+              </div>
               <span class="ferr" id="hcpc-err">HCPC is required.</span>
             </div>
             <div class="field">
@@ -400,6 +426,7 @@ tr:hover td{background:rgba(83,194,177,0.04);}
           <option value="AH2506">Inventory</option>
           <option value="AH2507">Break/Lunch</option>
           <option value="AH2508">Out of Office</option>
+          <option value="AH2509">Meeting</option>
         </select>
         <button class="btn-history" onclick="openHistory()">Previous Days</button>
         <button class="btn-export" onclick="exportCSV()">Export CSV</button>
@@ -483,7 +510,15 @@ tr:hover td{background:rgba(83,194,177,0.04);}
         <div class="field-row">
           <div class="field">
             <label>HCPC Code <span class="req">*</span></label>
-            <select id="editHcpc"><option value="">-- Select --</option></select>
+            <div class="hcpc-wrap" id="editHcpcWrap">
+              <input type="text" class="hcpc-input" id="editHcpcSearch" placeholder="Type to search HCPC..." autocomplete="off"
+                onfocus="openHcpc('editHcpcSearch','editHcpcDrop','editHcpc')"
+                oninput="filterHcpc('editHcpcSearch','editHcpcDrop','editHcpc')"
+                onkeydown="hcpcKeydown(event,'editHcpcSearch','editHcpcDrop','editHcpc')">
+              <span class="hcpc-arrow">&#9660;</span>
+              <div class="hcpc-dropdown" id="editHcpcDrop"></div>
+              <input type="hidden" id="editHcpc">
+            </div>
           </div>
           <div class="field">
             <label>QTY <span class="req">*</span></label>
@@ -555,13 +590,13 @@ var state = {
   userName: localStorage.getItem('ah_name') || '',
   userLocation: localStorage.getItem('ah_location') || '',
   selectedLoc: '',
-  historyMode: 'single'
+  historyMode: 'single',
+  isSaving: false
 };
 
 function init() {
   populateTimeSelectors();
   populateEditTimeSelectors();
-  populateHCPC();
   document.getElementById('manualDate').value = new Date().toISOString().split('T')[0];
   if (!state.userName || !state.userLocation) {
     document.getElementById('setupOverlay').classList.remove('hidden');
@@ -618,14 +653,98 @@ function populateFacilities(loc) {
   });
 }
 
-function populateHCPC() {
-  var sel = document.getElementById('hcpc');
-  HCPC_CODES.forEach(function(h) {
-    var o = document.createElement('option');
-    o.value = o.textContent = h;
-    sel.appendChild(o);
-  });
+// ── HCPC COMBOBOX ──────────────────────────────────────────────────────
+var _hcpcKbdIdx = {};
+
+function openHcpc(searchId, dropId, valId) {
+  filterHcpc(searchId, dropId, valId);
+  document.getElementById(dropId).classList.add('open');
 }
+
+function filterHcpc(searchId, dropId, valId) {
+  var q    = document.getElementById(searchId).value.trim().toUpperCase();
+  var drop = document.getElementById(dropId);
+  var list = q ? HCPC_CODES.filter(function(c) { return c.toUpperCase().indexOf(q) >= 0; }) : HCPC_CODES;
+  _hcpcKbdIdx[searchId] = -1;
+  if (!list.length) {
+    drop.innerHTML = '<div class="hcpc-opt no-match">No match for "' + q + '"</div>';
+  } else {
+    drop.innerHTML = list.map(function(c) {
+      return '<div class="hcpc-opt" onmousedown="selectHcpc(event,\'' + searchId + '\',\'' + dropId + '\',\'' + valId + '\',\'' + c + '\')">' + c + '</div>';
+    }).join('');
+  }
+  drop.classList.add('open');
+}
+
+function selectHcpc(evt, searchId, dropId, valId, code) {
+  if (evt) evt.preventDefault();
+  document.getElementById(searchId).value = code;
+  document.getElementById(valId).value    = code;
+  document.getElementById(dropId).classList.remove('open');
+  document.getElementById(searchId).classList.remove('err');
+  _hcpcKbdIdx[searchId] = -1;
+}
+
+function hcpcKeydown(e, searchId, dropId, valId) {
+  var drop  = document.getElementById(dropId);
+  var items = drop.querySelectorAll('.hcpc-opt:not(.no-match)');
+  if (!drop.classList.contains('open')) { openHcpc(searchId, dropId, valId); return; }
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    _hcpcKbdIdx[searchId] = Math.min((_hcpcKbdIdx[searchId]||0) + 1, items.length - 1);
+    _hcpcKbdHighlight(items, _hcpcKbdIdx[searchId]);
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    _hcpcKbdIdx[searchId] = Math.max((_hcpcKbdIdx[searchId]||0) - 1, 0);
+    _hcpcKbdHighlight(items, _hcpcKbdIdx[searchId]);
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    var idx = _hcpcKbdIdx[searchId] || 0;
+    if (idx >= 0 && items[idx]) selectHcpc(null, searchId, dropId, valId, items[idx].textContent);
+    else _hcpcAutoAccept(searchId, dropId, valId);
+  } else if (e.key === 'Escape') {
+    drop.classList.remove('open');
+  } else if (e.key === 'Tab') {
+    _hcpcAutoAccept(searchId, dropId, valId);
+  }
+}
+
+function _hcpcKbdHighlight(items, idx) {
+  items.forEach(function(el, i) { el.classList.toggle('kbd-active', i === idx); });
+  if (items[idx]) items[idx].scrollIntoView({ block: 'nearest' });
+}
+
+function _hcpcAutoAccept(searchId, dropId, valId) {
+  var v = document.getElementById(searchId).value.trim().toUpperCase();
+  document.getElementById(dropId).classList.remove('open');
+  if (HCPC_CODES.indexOf(v) >= 0) {
+    document.getElementById(valId).value = v;
+  } else {
+    var m = HCPC_CODES.find(function(c) { return c.toUpperCase().indexOf(v) >= 0; });
+    if (m) { document.getElementById(searchId).value = m; document.getElementById(valId).value = m; }
+  }
+}
+
+document.addEventListener('mousedown', function(e) {
+  ['hcpcWrap', 'editHcpcWrap'].forEach(function(wrapId) {
+    var wrap = document.getElementById(wrapId);
+    if (wrap && !wrap.contains(e.target)) {
+      var drop = wrap.querySelector('.hcpc-dropdown');
+      var inp  = wrap.querySelector('.hcpc-input');
+      var hid  = wrap.querySelector('input[type=hidden]');
+      if (drop) drop.classList.remove('open');
+      if (inp && hid) {
+        var v = inp.value.trim().toUpperCase();
+        if (HCPC_CODES.indexOf(v) >= 0) { hid.value = v; }
+        else {
+          var m = HCPC_CODES.find(function(c) { return c.toUpperCase().indexOf(v) >= 0; });
+          if (m) { inp.value = m; hid.value = m; }
+        }
+      }
+    }
+  });
+});
+// ── END HCPC ───────────────────────────────────────────────────────────
 
 function populateEditTimeSelectors() {
   ['editStartHr','editEndHr'].forEach(function(id) {
@@ -713,6 +832,7 @@ function validate() {
 }
 
 function saveManual() {
+  if (state.isSaving) return;
   if (!validate()) { toast('error', 'Missing Fields', 'Fill in all required fields.'); return; }
   var dateVal = document.getElementById('manualDate').value;
   if (!dateVal) { fieldErr('manualDate', 'Date is required.'); return; }
@@ -722,6 +842,9 @@ function saveManual() {
   var endDt    = new Date(endISO);
   if (endDt <= startDt) { fieldErr('endTime', 'End must be after start.'); toast('error', 'Invalid Times', 'End must be after start.'); return; }
   if ((endDt - startDt) < 60000) { toast('warning', 'Too Short', 'Entry must be at least 1 minute.'); return; }
+  state.isSaving = true;
+  var btn = document.querySelector('.btn-save');
+  if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
   var ah    = document.getElementById('ahCode').value;
   var entry = buildEntry(startDt, endDt, ah, false);
   state.log.push(entry);
@@ -731,6 +854,10 @@ function saveManual() {
   renderLog();
   renderSummary();
   toast('success', 'Entry Saved', ah + ' -- ' + entry.duration);
+  setTimeout(function() {
+    state.isSaving = false;
+    if (btn) { btn.disabled = false; btn.textContent = 'Save Entry'; }
+  }, 1200);
 }
 
 function buildDT(dateStr, which) {
@@ -774,6 +901,8 @@ function buildEntry(startDt, endDt, ahCode, isIdle) {
 
 function clearForm() {
   ['ahCode','facility','hcpc'].forEach(function(id) { document.getElementById(id).value = ''; });
+  document.getElementById('hcpcSearch').value = '';
+  document.getElementById('hcpcDrop').classList.remove('open');
   ['doctor','itemName','patientName','addlNotes'].forEach(function(id) { document.getElementById(id).value = ''; });
   document.getElementById('qty').value = '';
   document.getElementById('patientDob').value = '';
@@ -850,7 +979,7 @@ function renderLog() {
   tbody.innerHTML = rows.map(function(r) {
     var code = r.ahCode.match(/AH[0-9]+/);
     var badge = code ? code[0] : r.ahCode;
-    var cls = r.ahCode.indexOf('2503') >= 0 ? 'fit' : r.ahCode.indexOf('2502') >= 0 ? 'idl' : r.ahCode.indexOf('2501') >= 0 ? 'trv' : '';
+    var cls = r.ahCode.indexOf('2503') >= 0 ? 'fit' : r.ahCode.indexOf('2502') >= 0 ? 'idl' : r.ahCode.indexOf('2501') >= 0 ? 'trv' : r.ahCode.indexOf('2509') >= 0 ? 'mtg' : '';
     var rowCls = r.isIdle ? 'row-idle' : '';
     return '<tr class="' + rowCls + '" onclick="openEdit(\'' + r.id + '\')">' +
       '<td>' + r.date + '</td>' +
@@ -974,7 +1103,7 @@ function loadHistory() {
     tbody.innerHTML = rows.map(function(r) {
       var code = r.ahCode.match(/AH[0-9]+/);
       var badge = code ? code[0] : r.ahCode;
-      var cls = r.ahCode.indexOf('2503') >= 0 ? 'fit' : r.ahCode.indexOf('2502') >= 0 ? 'idl' : '';
+      var cls = r.ahCode.indexOf('2503') >= 0 ? 'fit' : r.ahCode.indexOf('2502') >= 0 ? 'idl' : r.ahCode.indexOf('2501') >= 0 ? 'trv' : r.ahCode.indexOf('2509') >= 0 ? 'mtg' : '';
       return '<tr class="' + (r.isIdle ? 'row-idle' : '') + '">' +
         '<td>' + r.date + '</td>' +
         '<td><span class="ah-badge ' + cls + '">' + badge + '</span></td>' +
@@ -1117,6 +1246,7 @@ function openEdit(id) {
   document.getElementById('editFacility').value  = entry.facility || '';
   document.getElementById('editDoctor').value    = entry.doctor || '';
   document.getElementById('editHcpc').value      = entry.hcpc || '';
+  document.getElementById('editHcpcSearch').value = entry.hcpc || '';
   document.getElementById('editQty').value       = entry.qty || '';
   document.getElementById('editItemName').value  = entry.itemName || '';
   document.getElementById('editPatientName').value = entry.patientName || '';
@@ -1157,16 +1287,6 @@ function populateEditFacilities() {
   });
 }
 
-function populateEditHCPC() {
-  var sel = document.getElementById('editHcpc');
-  if (sel.options.length > 1) return;
-  HCPC_CODES.forEach(function(h) {
-    var o = document.createElement('option');
-    o.value = o.textContent = h;
-    sel.appendChild(o);
-  });
-}
-
 function onEditAHChange() {
   var v    = document.getElementById('editAhCode').value;
   var code = v.split('-')[0];
@@ -1174,7 +1294,6 @@ function onEditAHChange() {
   var showPat = (code === 'AH2503');
   document.getElementById('edit-cond-facility').classList.toggle('vis', showFac);
   document.getElementById('edit-cond-patient').classList.toggle('vis', showPat);
-  if (showPat) populateEditHCPC();
 }
 
 function saveEdit() {
