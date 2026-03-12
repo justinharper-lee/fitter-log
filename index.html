@@ -196,6 +196,13 @@ tr:hover td{background:rgba(83,194,177,0.04);}
   .edit-title{font-family:var(--font-head);font-size:16px;font-weight:800;color:var(--text);}
   .edit-close{background:transparent;border:1px solid var(--border2);border-radius:7px;color:var(--text-muted);font-size:14px;width:32px;height:32px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
   .edit-close:hover{border-color:var(--danger);color:var(--danger);}
+
+/* TIME WARNING BANNER */
+.time-warn{display:none;align-items:center;gap:10px;background:rgba(255,181,71,0.12);border:1px solid rgba(255,181,71,0.45);border-radius:8px;padding:10px 14px;font-size:11px;color:var(--warn);line-height:1.5;margin-top:2px;}
+.time-warn.show{display:flex;}
+.time-warn-icon{font-size:15px;flex-shrink:0;}
+/* ALWAYS-VISIBLE ON-CALL ROW */
+.oncall-row{display:flex;gap:8px;padding-top:6px;border-top:1px solid var(--border);margin-top:2px;}
 </style>
 </head>
 <body>
@@ -397,8 +404,16 @@ tr:hover td{background:rgba(83,194,177,0.04);}
           <div class="cb-row">
             <label class="cb-item" id="cb-fitterNote"><input type="checkbox" id="fitterNote" onchange="updateCb('cb-fitterNote','fitterNote')"><span>Fitter Note</span></label>
             <label class="cb-item" id="cb-par"><input type="checkbox" id="par" onchange="updateCb('cb-par','par')"><span>PAR</span></label>
-            <label class="cb-item" id="cb-onCall"><input type="checkbox" id="onCall" onchange="updateCb('cb-onCall','onCall')"><span>On-Call</span></label>
           </div>
+        </div>
+
+        <div class="oncall-row">
+          <label class="cb-item" id="cb-onCall"><input type="checkbox" id="onCall" onchange="updateCb('cb-onCall','onCall')"><span>On-Call</span></label>
+        </div>
+
+        <div class="time-warn" id="timeWarn">
+          <span class="time-warn-icon">⚠️</span>
+          <span>This entry is <strong id="timeWarnDur"></strong> long — please double-check your AM/PM selection before saving.</span>
         </div>
 
         <div class="field">
@@ -542,8 +557,14 @@ tr:hover td{background:rgba(83,194,177,0.04);}
         <div class="cb-row">
           <label class="cb-item" id="edit-cb-fitterNote"><input type="checkbox" id="editFitterNote" onchange="updateCb('edit-cb-fitterNote','editFitterNote')"><span>Fitter Note</span></label>
           <label class="cb-item" id="edit-cb-par"><input type="checkbox" id="editPar" onchange="updateCb('edit-cb-par','editPar')"><span>PAR</span></label>
-          <label class="cb-item" id="edit-cb-onCall"><input type="checkbox" id="editOnCall" onchange="updateCb('edit-cb-onCall','editOnCall')"><span>On-Call</span></label>
         </div>
+      </div>
+      <div class="oncall-row">
+        <label class="cb-item" id="edit-cb-onCall"><input type="checkbox" id="editOnCall" onchange="updateCb('edit-cb-onCall','editOnCall')"><span>On-Call</span></label>
+      </div>
+      <div class="time-warn" id="editTimeWarn">
+        <span class="time-warn-icon">⚠️</span>
+        <span>This entry is <strong id="editTimeWarnDur"></strong> long — please double-check your AM/PM selection before saving.</span>
       </div>
       <div class="field">
         <label>Additional Notes</label>
@@ -833,18 +854,79 @@ function validate() {
 function saveManual() {
   if (state.isSaving) return;
   if (!validate()) { toast('error', 'Missing Fields', 'Fill in all required fields.'); return; }
+
   var dateVal = document.getElementById('manualDate').value;
-  if (!dateVal) { fieldErr('manualDate', 'Date is required.'); return; }
+  if (!dateVal) { fieldErr('manualDate', 'Date is required.'); toast('error', 'Missing Date', 'Please select a date.'); return; }
+
   var startISO = buildDT(dateVal, 'start');
   var endISO   = buildDT(dateVal, 'end');
   var startDt  = new Date(startISO);
   var endDt    = new Date(endISO);
-  if (endDt <= startDt) { fieldErr('endTime', 'End must be after start.'); toast('error', 'Invalid Times', 'End must be after start.'); return; }
+  var now      = new Date();
+
+  // Hard block: end before/equal to start
+  if (endDt <= startDt) {
+    fieldErr('endTime', 'End must be after start.');
+    toast('error', 'Invalid Times', 'End time must be after start — check your AM/PM selection.');
+    return;
+  }
+
+  // Hard block: minimum duration
   if ((endDt - startDt) < 60000) { toast('warning', 'Too Short', 'Entry must be at least 1 minute.'); return; }
+
+  // Hard block: future end time
+  if (endDt > now) {
+    toast('error', 'Future Time', 'End time cannot be in the future.');
+    return;
+  }
+
+  // Hard block: duplicate entry (same AH code, same start time, same date)
+  var ah = document.getElementById('ahCode').value;
+  var startISO_str = startDt.toISOString();
+  var isDuplicate = state.log.some(function(r) {
+    return r.ahCode === ah && r.startISO === startISO_str;
+  });
+  if (isDuplicate) {
+    toast('error', 'Duplicate Entry', 'An entry with this AH code and start time already exists.');
+    return;
+  }
+
+  // Soft warning: overlapping time range (same day)
+  var dateStr = startDt.toLocaleDateString('en-US');
+  var overlaps = state.log.filter(function(r) {
+    if (r.date !== dateStr) return false;
+    var rs = new Date(r.startISO), re = new Date(r.endISO);
+    return startDt < re && endDt > rs;
+  });
+  if (overlaps.length > 0 && !state._overlapAcknowledged) {
+    state._overlapAcknowledged = true;
+    var ol = overlaps[0];
+    toast('warning', 'Overlapping Entry', 'Overlaps with ' + ol.ahCode + ' (' + ol.startTime + '–' + ol.endTime + '). Save again to confirm.');
+    return;
+  }
+  state._overlapAcknowledged = false;
+
+  // Soft warning: over 4 hours
+  var durHrs = (endDt - startDt) / 3600000;
+  if (durHrs > 4) {
+    var warnEl = document.getElementById('timeWarn');
+    var warnDurEl = document.getElementById('timeWarnDur');
+    var wh = Math.floor(durHrs), wm = Math.round((durHrs - wh) * 60);
+    if (warnDurEl) warnDurEl.textContent = (wh > 0 ? wh + 'h ' : '') + wm + 'm';
+    if (warnEl) warnEl.classList.add('show');
+    if (!state._warnAcknowledged) {
+      state._warnAcknowledged = true;
+      toast('warning', 'Long Entry', 'Over 4 hours — double-check AM/PM. Save again to confirm.');
+      return;
+    }
+  }
+  state._warnAcknowledged = false;
+  var warnEl2 = document.getElementById('timeWarn');
+  if (warnEl2) warnEl2.classList.remove('show');
+
   state.isSaving = true;
   var btn = document.querySelector('.btn-save');
   if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
-  var ah    = document.getElementById('ahCode').value;
   var entry = buildEntry(startDt, endDt, ah, false);
   state.log.push(entry);
   saveLog();
@@ -910,6 +992,10 @@ function clearForm() {
   document.getElementById('cond-facility').classList.remove('vis');
   document.getElementById('cond-patient').classList.remove('vis');
   document.getElementById('manualDate').value = new Date().toISOString().split('T')[0];
+  var warnEl = document.getElementById('timeWarn');
+  if (warnEl) warnEl.classList.remove('show');
+  state._warnAcknowledged    = false;
+  state._overlapAcknowledged = false;
   clearErrors();
 }
 
@@ -1266,6 +1352,10 @@ function openEdit(id) {
 
 function closeEdit() {
   editingId = null;
+  state._editWarnAcknowledged    = false;
+  state._editOverlapAcknowledged = false;
+  var warnEl = document.getElementById('editTimeWarn');
+  if (warnEl) warnEl.classList.remove('show');
   document.getElementById('editOverlay').classList.add('hidden');
 }
 
@@ -1302,13 +1392,70 @@ function saveEdit() {
   var ah      = document.getElementById('editAhCode').value;
   var code    = ah.split('-')[0];
   var dateVal = document.getElementById('editDate').value;
-  if (!ah || !dateVal) { toast('error','Missing Fields','AH Code and Date are required.'); return; }
+  if (!ah)      { toast('error','Missing Fields','AH Code is required.'); return; }
+  if (!dateVal) { toast('error','Missing Date','Please select a date.'); return; }
 
   var startISO = buildEditDT(dateVal, 'editStart');
   var endISO   = buildEditDT(dateVal, 'editEnd');
   var startDt  = new Date(startISO);
   var endDt    = new Date(endISO);
-  if (endDt <= startDt) { toast('error','Invalid Times','End must be after start.'); return; }
+  var now      = new Date();
+
+  // Hard block: end before/equal to start
+  if (endDt <= startDt) {
+    toast('error','Invalid Times','End time must be after start — check your AM/PM selection.');
+    return;
+  }
+
+  // Hard block: future end time
+  if (endDt > now) {
+    toast('error','Future Time','End time cannot be in the future.');
+    return;
+  }
+
+  // Hard block: duplicate (same AH code + start time on a different entry)
+  var startISO_str = startDt.toISOString();
+  var isDuplicate = state.log.some(function(r, i) {
+    return i !== idx && r.ahCode === ah && r.startISO === startISO_str;
+  });
+  if (isDuplicate) {
+    toast('error','Duplicate Entry','Another entry with this AH code and start time already exists.');
+    return;
+  }
+
+  // Soft warning: overlapping time range (same day, excluding self)
+  var dateStr = startDt.toLocaleDateString('en-US');
+  var overlaps = state.log.filter(function(r, i) {
+    if (i === idx) return false;
+    if (r.date !== dateStr) return false;
+    var rs = new Date(r.startISO), re = new Date(r.endISO);
+    return startDt < re && endDt > rs;
+  });
+  if (overlaps.length > 0 && !state._editOverlapAcknowledged) {
+    state._editOverlapAcknowledged = true;
+    var ol = overlaps[0];
+    toast('warning','Overlapping Entry','Overlaps with ' + ol.ahCode + ' (' + ol.startTime + '–' + ol.endTime + '). Save again to confirm.');
+    return;
+  }
+  state._editOverlapAcknowledged = false;
+
+  // Soft warning: over 4 hours
+  var durHrs = (endDt - startDt) / 3600000;
+  if (durHrs > 4) {
+    var warnEl = document.getElementById('editTimeWarn');
+    var warnDurEl = document.getElementById('editTimeWarnDur');
+    var wh = Math.floor(durHrs), wm = Math.round((durHrs - wh) * 60);
+    if (warnDurEl) warnDurEl.textContent = (wh > 0 ? wh + 'h ' : '') + wm + 'm';
+    if (warnEl) warnEl.classList.add('show');
+    if (!state._editWarnAcknowledged) {
+      state._editWarnAcknowledged = true;
+      toast('warning','Long Entry','Over 4 hours — double-check AM/PM. Save again to confirm.');
+      return;
+    }
+  }
+  state._editWarnAcknowledged = false;
+  var warnEl2 = document.getElementById('editTimeWarn');
+  if (warnEl2) warnEl2.classList.remove('show');
 
   var elapsed = (endDt - startDt) / 1000;
   var entry   = state.log[idx];
