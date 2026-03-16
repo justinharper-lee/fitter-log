@@ -930,6 +930,13 @@ function saveManual() {
   renderLog();
   renderSummary();
   toast('success', 'Entry Saved', ah + ' -- ' + entry.duration);
+  // Remind every 5 entries not to clear browser cache
+  var totalEntries = state.log.filter(function(r) { return !r.isIdle; }).length;
+  if (totalEntries > 0 && totalEntries % 5 === 0) {
+    setTimeout(function() {
+      toast('warning', 'Reminder', 'Do not clear your browser cache — your entries are stored locally and will be lost.');
+    }, 1000);
+  }
   setTimeout(function() {
     state.isSaving = false;
     if (btn) { btn.disabled = false; btn.textContent = 'Save Entry'; }
