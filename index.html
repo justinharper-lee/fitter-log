@@ -1297,12 +1297,11 @@ function confirmSubmit() {
   });
   var csv = cols.join(',') + "\n";
   data.forEach(function(r) { csv += r.map(function(v) { return '"' + String(v||'').replace(/"/g,'""') + '"'; }).join(',') + "\n"; });
-  var filename = 'FitterLog_Submit_' + state.userName.replace(' ','_') + '_' + new Date().toISOString().split('T')[0] + '.csv';
   var blob = new Blob([csv], {type:'text/csv'});
   var url  = URL.createObjectURL(blob);
   var a    = document.createElement('a');
   a.href = url;
-  a.download = filename;
+  a.download = 'FitterLog_Submit_' + state.userName.replace(' ','_') + '_' + new Date().toISOString().split('T')[0] + '.csv';
   a.click();
   URL.revokeObjectURL(url);
   // Clear submitted entries from local log
@@ -1312,12 +1311,6 @@ function confirmSubmit() {
   renderLog();
   renderSummary();
   toast('success', 'Log Submitted', unsubmitted.length + ' entries downloaded and cleared.');
-  // Open Outlook with pre-filled email
-  setTimeout(function() {
-    var subject = encodeURIComponent('Fitter Log — ' + (state.userName || 'Unknown') + ' — ' + new Date().toLocaleDateString('en-US'));
-    var body = encodeURIComponent('Hi Justin,\n\nPlease find my fitter log attached for ' + new Date().toLocaleDateString('en-US') + '.\n\n' + (state.userName || '') + '\n\nNote: Attach the file ' + filename + ' from your Downloads folder before sending.');
-    window.location.href = 'mailto:justin.harper@adapthealth.com?subject=' + subject + '&body=' + body;
-  }, 800);
 }
 
 // ── EDIT MODAL ──
