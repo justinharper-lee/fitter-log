@@ -455,9 +455,9 @@ tr:hover td{background:rgba(83,194,177,0.04);}
       <div class="summary-row">
         <div class="sum-card"><div class="sum-label">Entries Today</div><div class="sum-val" id="sumEntries">0</div></div>
         <div class="sum-card"><div class="sum-label">Time Logged Today</div><div class="sum-val" id="sumTime">0m</div></div>
-        <div class="sum-card" style="cursor:pointer;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:6px;" onclick="backupMyLog()">
-          <div style="font-family:var(--font-head);font-size:15px;font-weight:800;color:var(--teal);letter-spacing:1px;text-transform:uppercase;">Backup My Log</div>
-          <div style="font-size:11px;color:var(--text-muted);" id="lastBackupLabel">Not backed up yet today</div>
+        <div class="sum-card sum-card-submit" onclick="openSubmit()" style="cursor:pointer;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:6px;">
+          <div style="font-family:var(--font-head);font-size:15px;font-weight:800;color:var(--teal);letter-spacing:1px;text-transform:uppercase;">Submit Log</div>
+          <div style="font-size:11px;color:var(--text-muted);">Send <span id="submitCountNum" style="color:var(--teal);font-weight:700;">0</span> entries to master log</div>
           <div style="margin-top:4px;background:var(--teal);color:#0A2F4A;font-family:var(--font-head);font-size:10px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;padding:5px 16px;border-radius:20px;">Download CSV</div>
         </div>
       </div>
@@ -581,7 +581,17 @@ tr:hover td{background:rgba(83,194,177,0.04);}
   </div>
 </div>
 
-<!-- SUBMIT OVERLAY REMOVED -->
+<!-- SUBMIT CONFIRM MODAL -->
+<div class="overlay hidden" id="submitOverlay">
+  <div class="setup-box" style="max-width:480px;">
+    <h2 style="margin-bottom:12px;">Submit Log</h2>
+    <p style="margin-bottom:20px;">This will mark <strong id="submitCountLabel" style="color:var(--teal)"></strong> unsubmitted entries as submitted and download them as a CSV for the master log.<br><br>Submitted entries cannot be edited.</p>
+    <div style="display:flex;gap:10px;">
+      <button class="btn-edit-cancel" style="flex:1;" onclick="document.getElementById('submitOverlay').classList.add('hidden')">Cancel</button>
+      <button class="btn-setup" style="flex:1;" onclick="confirmSubmit()">Submit and Download</button>
+    </div>
+  </div>
+</div>
 <div class="toast-wrap" id="toastWrap"></div>
 
 <script>
@@ -620,7 +630,7 @@ function init() {
   setInterval(updateClock, 1000);
   renderLog();
   renderSummary();
-  setSyncStatus('local', 'Entries saved to browser — use Backup My Log at end of shift');
+  setSyncStatus('local', 'Local mode -- entries saved to browser');
 }
 
 function applyUser() {
@@ -1007,40 +1017,6 @@ function saveLog() {
   try { localStorage.setItem('ah_fitterlog', JSON.stringify(state.log)); } catch(e) {}
 }
 
-function backupMyLog() {
-  if (!state.log.length) { toast('warning', 'Nothing to Backup', 'No entries logged yet.'); return; }
-  var today = new Date().toLocaleDateString('en-US');
-  var todayEntries = state.log.filter(function(r) { return r.date === today; });
-  if (!todayEntries.length) { toast('warning', 'Nothing to Backup', 'No entries for today yet.'); return; }
-  var cols = ['Fitter','AH_Code','Entry_Date','Start_Time','End_Time','Duration_Min','Facility','Doctor','HCPC','Item_Name','QTY','Patient_Name','Patient_DOB','Fitter_Note','PAR','On_Call','Additional_Notes','Location'];
-  var rows = todayEntries.map(function(e) {
-    return [e.fitter,e.ahCode,e.date,e.startTime,e.endTime,e.durationMin,e.facility||'',e.doctor||'',e.hcpc||'',e.itemName||'',e.qty||'',e.patientName||'',e.patientDob||'',e.fitterNote?'Yes':'No',e.par?'Yes':'No',e.onCall?'Yes':'No',e.addlNotes||'',e.location||''];
-  });
-  var csv = cols.join(',') + '\n';
-  rows.forEach(function(r) { csv += r.map(function(v) { return '"' + String(v).replace(/"/g,'""') + '"'; }).join(',') + '\n'; });
-  var safeName = (state.userName || 'Unknown').replace(/[^a-zA-Z0-9]/g,'_');
-  var dateStr  = new Date().toISOString().split('T')[0];
-  var filename = 'FitterLog_' + safeName + '_' + dateStr + '.csv';
-  var blob = new Blob([csv], {type:'text/csv'});
-  var url  = URL.createObjectURL(blob);
-  var a    = document.createElement('a');
-  a.href = url; a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
-  var now = new Date();
-  var timeStr = now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
-  state.lastBackup = timeStr;
-  var lbl = document.getElementById('lastBackupLabel');
-  if (lbl) lbl.textContent = 'Last backup: ' + timeStr;
-  toast('success', 'Backup Complete', todayEntries.length + ' entries saved to Downloads.');
-  // Prompt to email
-  setTimeout(function() {
-    var subject = encodeURIComponent('Fitter Log — ' + (state.userName || 'Unknown') + ' — ' + new Date().toLocaleDateString('en-US'));
-    var body = encodeURIComponent('Hi Justin,\n\nPlease find my fitter log attached for ' + new Date().toLocaleDateString('en-US') + '.\n\n' + (state.userName || '') + '\n\nNote: Attach the file ' + filename + ' from your Downloads folder before sending.');
-    window.location.href = 'mailto:justin.harper@adapthealth.com?subject=' + subject + '&body=' + body;
-  }, 800);
-}
-
 async function saveToSP(entry) {
   setSyncStatus('saving', 'Saving to SharePoint...');
   try {
@@ -1114,6 +1090,7 @@ function renderLog() {
       '<td style="max-width:110px;overflow:hidden;text-overflow:ellipsis">' + (r.addlNotes||'--') + '</td>' +
       '</tr>';
   }).join('');
+  updateSubmitCount();
 }
 
 function renderSummary() {
@@ -1295,7 +1272,46 @@ function toast(type, title, msg) {
 }
 
 
-// submit functions removed — replaced by backupMyLog()
+// ── SUBMIT COUNT ──
+function updateSubmitCount() {
+  var count = state.log.filter(function(r) { return !r.submitted; }).length;
+  var el = document.getElementById('submitCountNum');
+  if (el) el.textContent = count;
+}
+
+// ── SUBMIT LOG ──
+function openSubmit() {
+  var unsubmitted = state.log.filter(function(r) { return !r.submitted; });
+  if (!unsubmitted.length) { toast('warning', 'Nothing to Submit', 'All entries have already been submitted.'); return; }
+  document.getElementById('submitCountLabel').textContent = unsubmitted.length + ' entry' + (unsubmitted.length > 1 ? 'ies' : 'y');
+  document.getElementById('submitOverlay').classList.remove('hidden');
+}
+
+function confirmSubmit() {
+  var unsubmitted = state.log.filter(function(r) { return !r.submitted; });
+  if (!unsubmitted.length) return;
+  // Export CSV first
+  var cols = ['Fitter','AH_Code','Entry_Date','Start_Time','End_Time','Duration','Facility','Doctor','HCPC','Item_Name','QTY','Patient_Name','Patient_DOB','Fitter_Note','PAR','On_Call','Additional_Notes','Location'];
+  var data = unsubmitted.map(function(e) {
+    return [e.fitter,e.ahCode,e.date,e.startTime,e.endTime,e.durationMin,e.facility,e.doctor,e.hcpc,e.itemName,e.qty,e.patientName,e.patientDob,e.fitterNote?'Yes':'No',e.par?'Yes':'No',e.onCall?'Yes':'No',e.addlNotes,e.location];
+  });
+  var csv = cols.join(',') + "\n";
+  data.forEach(function(r) { csv += r.map(function(v) { return '"' + String(v||'').replace(/"/g,'""') + '"'; }).join(',') + "\n"; });
+  var blob = new Blob([csv], {type:'text/csv'});
+  var url  = URL.createObjectURL(blob);
+  var a    = document.createElement('a');
+  a.href = url;
+  a.download = 'FitterLog_Submit_' + state.userName.replace(' ','_') + '_' + new Date().toISOString().split('T')[0] + '.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+  // Clear submitted entries from local log
+  state.log = state.log.filter(function(r) { return r.submitted; });
+  saveLog();
+  document.getElementById('submitOverlay').classList.add('hidden');
+  renderLog();
+  renderSummary();
+  toast('success', 'Log Submitted', unsubmitted.length + ' entries downloaded and cleared.');
+}
 
 // ── EDIT MODAL ──
 var editingId = null;
