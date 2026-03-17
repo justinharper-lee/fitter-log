@@ -630,7 +630,7 @@ function init() {
   setInterval(updateClock, 1000);
   renderLog();
   renderSummary();
-  setSyncStatus('local', 'Auto-backup on — entries saved to browser + Downloads folder');
+  setSyncStatus('local', 'Local mode -- entries saved to browser');
 }
 
 function applyUser() {
@@ -926,7 +926,6 @@ function saveManual() {
   var entry = buildEntry(startDt, endDt, ah, false);
   state.log.push(entry);
   saveLog();
-  silentBackup();
   saveToSP(entry);
   clearForm(endDt);
   renderLog();
@@ -1016,35 +1015,6 @@ function clearForm(prevEndDt) {
 
 function saveLog() {
   try { localStorage.setItem('ah_fitterlog', JSON.stringify(state.log)); } catch(e) {}
-}
-
-function silentBackup() {
-  try {
-    if (!state.log.length) return;
-    var today = new Date().toLocaleDateString('en-US');
-    var todayEntries = state.log.filter(function(r) { return r.date === today; });
-    if (!todayEntries.length) return;
-    var cols = ['Fitter','AH_Code','Entry_Date','Start_Time','End_Time','Duration_Min','Facility','Doctor','HCPC','Item_Name','QTY','Patient_Name','Patient_DOB','Fitter_Note','PAR','On_Call','Additional_Notes','Location'];
-    var rows = todayEntries.map(function(e) {
-      return [e.fitter,e.ahCode,e.date,e.startTime,e.endTime,e.durationMin,e.facility||'',e.doctor||'',e.hcpc||'',e.itemName||'',e.qty||'',e.patientName||'',e.patientDob||'',e.fitterNote?'Yes':'No',e.par?'Yes':'No',e.onCall?'Yes':'No',e.addlNotes||'',e.location||''];
-    });
-    var csv = cols.join(',') + '\n';
-    rows.forEach(function(r) { csv += r.map(function(v) { return '"' + String(v).replace(/"/g,'""') + '"'; }).join(',') + '\n'; });
-    var safeName = (state.userName || 'Unknown').replace(/[^a-zA-Z0-9]/g,'_');
-    var dateStr  = new Date().toISOString().split('T')[0];
-    var filename = 'FitterLog_' + safeName + '_' + dateStr + '.csv';
-    var blob = new Blob([csv], {type:'text/csv'});
-    var url  = URL.createObjectURL(blob);
-    var a    = document.createElement('a');
-    a.href     = url;
-    a.download = filename;
-    a.style.display = 'none';
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(function() { document.body.removeChild(a); URL.revokeObjectURL(url); }, 500);
-  } catch(e) {
-    console.warn('Silent backup failed:', e);
-  }
 }
 
 async function saveToSP(entry) {
@@ -1519,7 +1489,6 @@ function saveEdit() {
   entry.addlNotes   = document.getElementById('editNotes').value;
 
   saveLog();
-  silentBackup();
   closeEdit();
   renderLog();
   renderSummary();
