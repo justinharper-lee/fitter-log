@@ -144,12 +144,16 @@ tr:hover td{background:rgba(83,194,177,0.04);}
 .setup-field label{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-muted);}
 .setup-field input{background:var(--bg2);border:1px solid var(--border2);border-radius:7px;color:#e8f4f8 !important;font-family:var(--font);font-size:13px;padding:11px 13px;outline:none;width:100%;}
 .setup-field input:focus{border-color:var(--teal);}
-.loc-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:22px;}
+.loc-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:22px;}
 .loc-btn{background:var(--bg2);border:2px solid var(--border2);border-radius:10px;padding:16px 10px;cursor:pointer;text-align:center;transition:all 0.2s;}
 .loc-btn:hover{border-color:var(--teal);}
 .loc-btn.selected{border-color:var(--teal);background:var(--teal-dim);}
+.loc-btn.commission-btn{border-color:rgba(178,200,27,0.3);}
+.loc-btn.commission-btn:hover{border-color:var(--green);}
+.loc-btn.commission-btn.selected{border-color:var(--green);background:rgba(178,200,27,0.12);}
 .loc-name{font-family:var(--font-head);font-size:14px;font-weight:700;color:var(--text);}
 .loc-sub{font-size:10px;color:var(--text-muted);margin-top:4px;}
+.commission-notice{background:rgba(178,200,27,0.08);border:1px solid rgba(178,200,27,0.3);border-radius:8px;padding:10px 14px;font-size:11px;color:var(--green);line-height:1.6;margin-bottom:14px;}
 .btn-setup{background:var(--teal);color:#0A2F4A;font-family:var(--font-head);font-size:13px;font-weight:700;letter-spacing:1px;text-transform:uppercase;border:none;border-radius:8px;padding:14px;cursor:pointer;width:100%;}
 .btn-setup:hover{background:#6dd8c8;box-shadow:0 4px 20px var(--teal-glow);}
 
@@ -223,6 +227,7 @@ tr:hover td{background:rgba(83,194,177,0.04);}
       <div class="loc-btn" id="loc-PA" onclick="selectLoc('PA')"><div class="loc-name">PA</div><div class="loc-sub">Pennsylvania</div></div>
       <div class="loc-btn" id="loc-KY" onclick="selectLoc('KY')"><div class="loc-name">KY</div><div class="loc-sub">Kentucky</div></div>
       <div class="loc-btn" id="loc-Riverside" onclick="selectLoc('Riverside')"><div class="loc-name">Riverside</div><div class="loc-sub">Riverside</div></div>
+      <div class="loc-btn commission-btn" id="loc-CommissionOnly" onclick="selectLoc('CommissionOnly')"><div class="loc-name" style="color:var(--green);">Commission Only</div><div class="loc-sub">Patient Fittings Only</div></div>
     </div>
     <button class="btn-setup" onclick="saveSetup()">Save &amp; Continue</button>
   </div>
@@ -301,128 +306,8 @@ tr:hover td{background:rgba(83,194,177,0.04);}
     <!-- FORM -->
     <div class="panel">
       <div class="panel-header"><div class="panel-dot"></div><span class="panel-title">Manual Entry</span></div>
-      <div class="panel-body">
-
-        <div class="field">
-          <label>AH Code <span class="req">*</span></label>
-          <select id="ahCode" onchange="onAHChange()">
-            <option value="">-- Select AH Code --</option>
-            <option value="AH2500-Training">AH2500 -- Training</option>
-            <option value="AH2501-Travel">AH2501 -- Travel</option>
-            <option value="AH2502-On-Site/Idle">AH2502 -- On-Site / Idle</option>
-            <option value="AH2503-Patient Fitting">AH2503 -- Patient Fitting</option>
-            <option value="AH2504-Paperwork/Documentation">AH2504 -- Paperwork / Documentation</option>
-            <option value="AH2505-Misc">AH2505 -- Misc</option>
-            <option value="AH2506-Inventory">AH2506 -- Inventory</option>
-            <option value="AH2507-Break/Lunch">AH2507 -- Break / Lunch</option>
-            <option value="AH2508-Out of Office">AH2508 -- Out of Office</option>
-            <option value="AH2509-Meeting">AH2509 -- Meeting</option>
-          </select>
-          <span class="ferr" id="ahCode-err">Please select an AH Code.</span>
-        </div>
-
-        <div class="section-label">Date and Time</div>
-
-        <div class="field">
-          <label>Date <span class="req">*</span></label>
-          <input type="date" id="manualDate">
-          <span class="ferr" id="manualDate-err">Date is required.</span>
-        </div>
-
-        <div class="field">
-          <label>Start Time <span class="req">*</span></label>
-          <div class="time-picker">
-            <select id="startHr"></select>
-            <select id="startMin"></select>
-            <select id="startAmPm"><option>AM</option><option>PM</option></select>
-          </div>
-          <span class="ferr" id="startTime-err">Start time required.</span>
-        </div>
-
-        <div class="field">
-          <label>End Time <span class="req">*</span></label>
-          <div class="time-picker">
-            <select id="endHr"></select>
-            <select id="endMin"></select>
-            <select id="endAmPm"><option>AM</option><option selected>PM</option></select>
-          </div>
-          <span class="ferr" id="endTime-err">End must be after start.</span>
-        </div>
-
-        <!-- FACILITY: 2503 and 2506 only -->
-        <div class="cond" id="cond-facility">
-          <div class="section-label">Facility</div>
-          <div class="field">
-            <label>Facility <span class="req">*</span></label>
-            <select id="facility"><option value="">-- Select Facility --</option></select>
-            <span class="ferr" id="facility-err">Facility is required.</span>
-          </div>
-        </div>
-
-        <!-- PATIENT: 2503 only -->
-        <div class="cond" id="cond-patient">
-          <div class="section-label">Clinical Details</div>
-          <div class="field">
-            <label>Doctor <span class="req">*</span></label>
-            <input type="text" id="doctor" placeholder="Dr. Last Name" autocomplete="off">
-            <span class="ferr" id="doctor-err">Doctor is required.</span>
-          </div>
-          <div class="field-row">
-            <div class="field">
-              <label>HCPC Code <span class="req">*</span></label>
-              <div class="hcpc-wrap" id="hcpcWrap">
-                <input type="text" class="hcpc-input" id="hcpcSearch" placeholder="Type to search HCPC..." autocomplete="off"
-                  onfocus="openHcpc('hcpcSearch','hcpcDrop','hcpc')"
-                  oninput="filterHcpc('hcpcSearch','hcpcDrop','hcpc')"
-                  onkeydown="hcpcKeydown(event,'hcpcSearch','hcpcDrop','hcpc')">
-                <span class="hcpc-arrow">&#9660;</span>
-                <div class="hcpc-dropdown" id="hcpcDrop"></div>
-                <input type="hidden" id="hcpc">
-              </div>
-              <span class="ferr" id="hcpc-err">HCPC is required.</span>
-            </div>
-            <div class="field">
-              <label>QTY <span class="req">*</span></label>
-              <input type="number" id="qty" placeholder="1" min="1">
-              <span class="ferr" id="qty-err">Valid QTY required.</span>
-            </div>
-          </div>
-          <div class="field">
-            <label>Item Name</label>
-            <input type="text" id="itemName" placeholder="Device / item description" autocomplete="off">
-          </div>
-          <div class="section-label">Patient Information</div>
-          <div class="field-row">
-            <div class="field">
-              <label>Patient Name</label>
-              <input type="text" id="patientName" placeholder="Last, First" autocomplete="off">
-            </div>
-            <div class="field">
-              <label>Patient DOB</label>
-              <input type="date" id="patientDob">
-            </div>
-          </div>
-          <div class="cb-row">
-            <label class="cb-item" id="cb-fitterNote"><input type="checkbox" id="fitterNote" onchange="updateCb('cb-fitterNote','fitterNote')"><span>Fitter Note</span></label>
-            <label class="cb-item" id="cb-par"><input type="checkbox" id="par" onchange="updateCb('cb-par','par')"><span>PAR</span></label>
-          </div>
-        </div>
-
-        <div class="oncall-row">
-          <label class="cb-item" id="cb-onCall"><input type="checkbox" id="onCall" onchange="updateCb('cb-onCall','onCall')"><span>On-Call</span></label>
-        </div>
-
-        <div class="time-warn" id="timeWarn">
-          <span class="time-warn-icon">⚠️</span>
-          <span>This entry is <strong id="timeWarnDur"></strong> long — please double-check your AM/PM selection before saving.</span>
-        </div>
-
-        <div class="field">
-          <label>Additional Notes</label>
-          <textarea id="addlNotes" placeholder="Optional..."></textarea>
-        </div>
-
-        <button class="btn-save" onclick="saveManual()">Save Entry</button>
+      <div class="panel-body" id="formPanelBody">
+        <!-- Rendered dynamically by renderForm() -->
       </div>
     </div>
 
@@ -474,7 +359,10 @@ tr:hover td{background:rgba(83,194,177,0.04);}
       <button class="edit-close" onclick="closeEdit()">x</button>
     </div>
     <div class="edit-body">
-      <div class="field">
+      <!-- Commission notice (shown for commission entries) -->
+      <div id="edit-commission-notice" style="display:none;align-items:center;gap:10px;background:rgba(178,200,27,0.08);border:1px solid rgba(178,200,27,0.3);border-radius:8px;padding:10px 14px;font-size:11px;color:var(--green);line-height:1.6;margin-bottom:4px;">&#9733; Commission Only entry &mdash; locked to AH2503. Time and facility fields are not applicable.</div>
+      <!-- AH Code (hidden for commission) -->
+      <div id="edit-ah-section" class="field">
         <label>AH Code <span class="req">*</span></label>
         <select id="editAhCode" onchange="onEditAHChange()">
           <option value="">-- Select AH Code --</option>
@@ -488,26 +376,29 @@ tr:hover td{background:rgba(83,194,177,0.04);}
           <option value="AH2507-Break/Lunch">AH2507 -- Break / Lunch</option>
           <option value="AH2508-Out of Office">AH2508 -- Out of Office</option>
           <option value="AH2509-Meeting">AH2509 -- Meeting</option>
-      </select>
+        </select>
       </div>
       <div class="field">
         <label>Date <span class="req">*</span></label>
         <input type="date" id="editDate">
       </div>
-      <div class="field">
-        <label>Start Time <span class="req">*</span></label>
-        <div class="time-picker">
-          <select id="editStartHr"></select>
-          <select id="editStartMin"></select>
-          <select id="editStartAmPm"><option>AM</option><option>PM</option></select>
+      <!-- Time section (hidden for commission) -->
+      <div id="edit-time-section">
+        <div class="field">
+          <label>Start Time <span class="req">*</span></label>
+          <div class="time-picker">
+            <select id="editStartHr"></select>
+            <select id="editStartMin"></select>
+            <select id="editStartAmPm"><option>AM</option><option>PM</option></select>
+          </div>
         </div>
-      </div>
-      <div class="field">
-        <label>End Time <span class="req">*</span></label>
-        <div class="time-picker">
-          <select id="editEndHr"></select>
-          <select id="editEndMin"></select>
-          <select id="editEndAmPm"><option>AM</option><option>PM</option></select>
+        <div class="field">
+          <label>End Time <span class="req">*</span></label>
+          <div class="time-picker">
+            <select id="editEndHr"></select>
+            <select id="editEndMin"></select>
+            <select id="editEndAmPm"><option>AM</option><option>PM</option></select>
+          </div>
         </div>
       </div>
       <div class="cond" id="edit-cond-facility">
@@ -548,11 +439,11 @@ tr:hover td{background:rgba(83,194,177,0.04);}
         <div class="section-label">Patient Information</div>
         <div class="field-row">
           <div class="field">
-            <label>Patient Name</label>
+            <label>Patient Name <span class="req">*</span></label>
             <input type="text" id="editPatientName">
           </div>
           <div class="field">
-            <label>Patient DOB</label>
+            <label>Patient DOB <span class="req">*</span></label>
             <input type="date" id="editPatientDob">
           </div>
         </div>
@@ -561,11 +452,23 @@ tr:hover td{background:rgba(83,194,177,0.04);}
           <label class="cb-item" id="edit-cb-par"><input type="checkbox" id="editPar" onchange="updateCb('edit-cb-par','editPar')"><span>PAR</span></label>
         </div>
       </div>
-      <div class="oncall-row">
+      <!-- Commission-only clinical fields (shown instead of cond-patient for commission entries) -->
+      <div id="edit-commission-fields" style="display:none;flex-direction:column;gap:13px;">
+        <div class="section-label">Clinical Details</div>
+        <div class="field"><label>Doctor <span class="req">*</span></label><input type="text" id="editDoctorCo" placeholder="Dr. Last Name"></div>
+        <div class="field-row">
+          <div class="field"><label>HCPC Code <span class="req">*</span></label><div class="hcpc-wrap" id="editHcpcWrapCo"><input type="text" class="hcpc-input" id="editHcpcSearchCo" placeholder="Type to search HCPC..." autocomplete="off" onfocus="openHcpc('editHcpcSearchCo','editHcpcDropCo','editHcpcCo')" oninput="filterHcpc('editHcpcSearchCo','editHcpcDropCo','editHcpcCo')" onkeydown="hcpcKeydown(event,'editHcpcSearchCo','editHcpcDropCo','editHcpcCo')"><span class="hcpc-arrow">&#9660;</span><div class="hcpc-dropdown" id="editHcpcDropCo"></div><input type="hidden" id="editHcpcCo"></div></div>
+          <div class="field"><label>QTY <span class="req">*</span></label><input type="number" id="editQtyCo" min="1"></div>
+        </div>
+        <div class="field"><label>Item Name</label><input type="text" id="editItemNameCo"></div>
+        <div class="section-label">Patient Information</div>
+        <div class="field-row"><div class="field"><label>Patient Name</label><input type="text" id="editPatientNameCo"></div><div class="field"><label>Patient DOB</label><input type="date" id="editPatientDobCo"></div></div>
+      </div>
+      <div class="oncall-row" id="edit-oncall-row">
         <label class="cb-item" id="edit-cb-onCall"><input type="checkbox" id="editOnCall" onchange="updateCb('edit-cb-onCall','editOnCall')"><span>On-Call</span></label>
       </div>
       <div class="time-warn" id="editTimeWarn">
-        <span class="time-warn-icon">⚠️</span>
+        <span class="time-warn-icon">&#9888;&#65039;</span>
         <span>This entry is <strong id="editTimeWarnDur"></strong> long — please double-check your AM/PM selection before saving.</span>
       </div>
       <div class="field">
@@ -616,10 +519,16 @@ var state = {
   isSaving: false
 };
 
+function isCommission() { return state.userLocation === 'CommissionOnly'; }
+
 function init() {
-  populateTimeSelectors();
-  populateEditTimeSelectors();
-  document.getElementById('manualDate').value = new Date().toISOString().split('T')[0];
+  if (!isCommission()) {
+    populateTimeSelectors();
+    populateEditTimeSelectors();
+  }
+  renderForm();
+  var dateEl = document.getElementById('manualDate');
+  if (dateEl) dateEl.value = new Date().toISOString().split('T')[0];
   if (!state.userName || !state.userLocation) {
     document.getElementById('setupOverlay').classList.remove('hidden');
   } else {
@@ -636,7 +545,58 @@ function init() {
 function applyUser() {
   document.getElementById('chipName').textContent = state.userName;
   document.getElementById('chipLoc').textContent  = state.userLocation;
-  populateFacilities(state.userLocation);
+  renderForm();
+  if (!isCommission()) populateFacilities(state.userLocation);
+}
+
+function renderForm() {
+  var body = document.getElementById('formPanelBody');
+  if (!body) return;
+  if (isCommission()) {
+    body.innerHTML = getCommissionForm();
+    // Init HCPC combobox for commission form
+    var dateEl = document.getElementById('manualDate');
+    if (dateEl) dateEl.value = new Date().toISOString().split('T')[0];
+  } else {
+    body.innerHTML = getStandardForm();
+    populateTimeSelectors();
+    var dateEl = document.getElementById('manualDate');
+    if (dateEl) dateEl.value = new Date().toISOString().split('T')[0];
+    populateFacilities(state.userLocation);
+    onAHChange();
+  }
+}
+
+function getCommissionForm() {
+  return '<div class="commission-notice">&#9733; Commission Only mode &mdash; entries are locked to AH2503 (Patient Fitting). Date, HCPC, and QTY are required.</div>' +
+    '<div class="field"><label>AH Code</label><div style="background:var(--bg2);border:1px solid var(--border2);border-radius:7px;padding:9px 12px;font-size:12px;color:var(--teal);font-weight:600;display:flex;align-items:center;justify-content:space-between;"><span>AH2503 &mdash; Patient Fitting</span><span style="font-size:9px;color:var(--text-muted);letter-spacing:1px;text-transform:uppercase;">locked</span></div></div>' +
+    '<div class="section-label">Date</div>' +
+    '<div class="field"><label>Date <span class="req">*</span></label><input type="date" id="manualDate"><span class="ferr" id="manualDate-err">Date is required.</span></div>' +
+    '<div class="section-label">Clinical Details</div>' +
+    '<div class="field"><label>Doctor <span class="req">*</span></label><input type="text" id="doctor" placeholder="Dr. Last Name" autocomplete="off"><span class="ferr" id="doctor-err">Doctor is required.</span></div>' +
+    '<div class="field-row">' +
+      '<div class="field"><label>HCPC Code <span class="req">*</span></label><div class="hcpc-wrap" id="hcpcWrap"><input type="text" class="hcpc-input" id="hcpcSearch" placeholder="Type to search HCPC..." autocomplete="off" onfocus="openHcpc(\'hcpcSearch\',\'hcpcDrop\',\'hcpc\')" oninput="filterHcpc(\'hcpcSearch\',\'hcpcDrop\',\'hcpc\')" onkeydown="hcpcKeydown(event,\'hcpcSearch\',\'hcpcDrop\',\'hcpc\')"><span class="hcpc-arrow">&#9660;</span><div class="hcpc-dropdown" id="hcpcDrop"></div><input type="hidden" id="hcpc"></div><span class="ferr" id="hcpc-err">HCPC is required.</span></div>' +
+      '<div class="field"><label>QTY <span class="req">*</span></label><input type="number" id="qty" placeholder="1" min="1"><span class="ferr" id="qty-err">Valid QTY required.</span></div>' +
+    '</div>' +
+    '<div class="field"><label>Item Name</label><input type="text" id="itemName" placeholder="Device / item description" autocomplete="off"></div>' +
+    '<div class="section-label">Patient Information</div>' +
+    '<div class="field-row"><div class="field"><label>Patient Name <span class="req">*</span></label><input type="text" id="patientName" placeholder="Last, First" autocomplete="off"><span class="ferr" id="patientName-err">Patient name is required.</span></div><div class="field"><label>Patient DOB <span class="req">*</span></label><input type="date" id="patientDob"><span class="ferr" id="patientDob-err">Patient DOB is required.</span></div></div>' +
+    '<div class="field"><label>Additional Notes</label><textarea id="addlNotes" placeholder="Optional..."></textarea></div>' +
+    '<button class="btn-save" onclick="saveManual()">Save Entry</button>';
+}
+
+function getStandardForm() {
+  return '<div class="field"><label>AH Code <span class="req">*</span></label><select id="ahCode" onchange="onAHChange()"><option value="">-- Select AH Code --</option><option value="AH2500-Training">AH2500 -- Training</option><option value="AH2501-Travel">AH2501 -- Travel</option><option value="AH2502-On-Site/Idle">AH2502 -- On-Site / Idle</option><option value="AH2503-Patient Fitting">AH2503 -- Patient Fitting</option><option value="AH2504-Paperwork/Documentation">AH2504 -- Paperwork / Documentation</option><option value="AH2505-Misc">AH2505 -- Misc</option><option value="AH2506-Inventory">AH2506 -- Inventory</option><option value="AH2507-Break/Lunch">AH2507 -- Break / Lunch</option><option value="AH2508-Out of Office">AH2508 -- Out of Office</option><option value="AH2509-Meeting">AH2509 -- Meeting</option></select><span class="ferr" id="ahCode-err">Please select an AH Code.</span></div>' +
+    '<div class="section-label">Date and Time</div>' +
+    '<div class="field"><label>Date <span class="req">*</span></label><input type="date" id="manualDate"><span class="ferr" id="manualDate-err">Date is required.</span></div>' +
+    '<div class="field"><label>Start Time <span class="req">*</span></label><div class="time-picker"><select id="startHr"></select><select id="startMin"></select><select id="startAmPm"><option>AM</option><option>PM</option></select></div><span class="ferr" id="startTime-err">Start time required.</span></div>' +
+    '<div class="field"><label>End Time <span class="req">*</span></label><div class="time-picker"><select id="endHr"></select><select id="endMin"></select><select id="endAmPm"><option>AM</option><option selected>PM</option></select></div><span class="ferr" id="endTime-err">End must be after start.</span></div>' +
+    '<div class="cond" id="cond-facility"><div class="section-label">Facility</div><div class="field"><label>Facility <span class="req">*</span></label><select id="facility"><option value="">-- Select Facility --</option></select><span class="ferr" id="facility-err">Facility is required.</span></div></div>' +
+    '<div class="cond" id="cond-patient"><div class="section-label">Clinical Details</div><div class="field"><label>Doctor <span class="req">*</span></label><input type="text" id="doctor" placeholder="Dr. Last Name" autocomplete="off"><span class="ferr" id="doctor-err">Doctor is required.</span></div><div class="field-row"><div class="field"><label>HCPC Code <span class="req">*</span></label><div class="hcpc-wrap" id="hcpcWrap"><input type="text" class="hcpc-input" id="hcpcSearch" placeholder="Type to search HCPC..." autocomplete="off" onfocus="openHcpc(\'hcpcSearch\',\'hcpcDrop\',\'hcpc\')" oninput="filterHcpc(\'hcpcSearch\',\'hcpcDrop\',\'hcpc\')" onkeydown="hcpcKeydown(event,\'hcpcSearch\',\'hcpcDrop\',\'hcpc\')"><span class="hcpc-arrow">&#9660;</span><div class="hcpc-dropdown" id="hcpcDrop"></div><input type="hidden" id="hcpc"></div><span class="ferr" id="hcpc-err">HCPC is required.</span></div><div class="field"><label>QTY <span class="req">*</span></label><input type="number" id="qty" placeholder="1" min="1"><span class="ferr" id="qty-err">Valid QTY required.</span></div></div><div class="field"><label>Item Name</label><input type="text" id="itemName" placeholder="Device / item description" autocomplete="off"></div><div class="section-label">Patient Information</div><div class="field-row"><div class="field"><label>Patient Name <span class="req">*</span></label><input type="text" id="patientName" placeholder="Last, First" autocomplete="off"><span class="ferr" id="patientName-err">Patient name is required.</span></div><div class="field"><label>Patient DOB <span class="req">*</span></label><input type="date" id="patientDob"><span class="ferr" id="patientDob-err">Patient DOB is required.</span></div></div><div class="cb-row"><label class="cb-item" id="cb-fitterNote"><input type="checkbox" id="fitterNote" onchange="updateCb(\'cb-fitterNote\',\'fitterNote\')"><span>Fitter Note</span></label><label class="cb-item" id="cb-par"><input type="checkbox" id="par" onchange="updateCb(\'cb-par\',\'par\')"><span>PAR</span></label></div></div>' +
+    '<div class="oncall-row"><label class="cb-item" id="cb-onCall"><input type="checkbox" id="onCall" onchange="updateCb(\'cb-onCall\',\'onCall\')"><span>On-Call</span></label></div>' +
+    '<div class="time-warn" id="timeWarn"><span class="time-warn-icon">&#9888;&#65039;</span><span>This entry is <strong id="timeWarnDur"></strong> long — please double-check your AM/PM selection before saving.</span></div>' +
+    '<div class="field"><label>Additional Notes</label><textarea id="addlNotes" placeholder="Optional..."></textarea></div>' +
+    '<button class="btn-save" onclick="saveManual()">Save Entry</button>';
 }
 
 function selectLoc(loc) {
@@ -791,6 +751,7 @@ function populateEditTimeSelectors() {
 function populateTimeSelectors() {
   ['startHr','endHr'].forEach(function(id) {
     var sel = document.getElementById(id);
+    if (!sel || sel.options.length > 0) return;
     for (var h = 1; h <= 12; h++) {
       var o = document.createElement('option');
       o.value = o.textContent = String(h);
@@ -800,6 +761,7 @@ function populateTimeSelectors() {
   });
   ['startMin','endMin'].forEach(function(id) {
     var sel = document.getElementById(id);
+    if (!sel || sel.options.length > 0) return;
     for (var m = 0; m < 60; m += 5) {
       var o = document.createElement('option');
       o.value = o.textContent = String(m).padStart(2,'0');
@@ -837,7 +799,18 @@ function fieldErr(id, msg) {
 
 function validate() {
   clearErrors();
-  var ok   = true;
+  var ok = true;
+  if (isCommission()) {
+    // Commission Only: no AH code picker, no time, no facility
+    if (!document.getElementById('manualDate').value) { fieldErr('manualDate', 'Date is required.'); ok = false; }
+    if (!document.getElementById('doctor').value.trim()) { fieldErr('doctor', 'Doctor is required.'); ok = false; }
+    if (!document.getElementById('hcpc').value) { fieldErr('hcpc', 'HCPC is required.'); ok = false; }
+    var qty = document.getElementById('qty').value;
+    if (!qty || isNaN(qty) || Number(qty) <= 0) { fieldErr('qty', 'Valid QTY required.'); ok = false; }
+    if (!document.getElementById('patientName').value.trim()) { fieldErr('patientName', 'Patient name is required.'); ok = false; }
+    if (!document.getElementById('patientDob').value) { fieldErr('patientDob', 'Patient DOB is required.'); ok = false; }
+    return ok;
+  }
   var ah   = document.getElementById('ahCode').value;
   var code = ah.split('-')[0];
   if (!ah) { fieldErr('ahCode', 'Please select an AH Code.'); ok = false; }
@@ -847,8 +820,10 @@ function validate() {
   if (code === 'AH2503') {
     if (!document.getElementById('doctor').value.trim()) { fieldErr('doctor', 'Doctor is required.'); ok = false; }
     if (!document.getElementById('hcpc').value)          { fieldErr('hcpc', 'HCPC is required.'); ok = false; }
-    var qty = document.getElementById('qty').value;
-    if (!qty || isNaN(qty) || Number(qty) <= 0)          { fieldErr('qty', 'Valid QTY required.'); ok = false; }
+    var qty2 = document.getElementById('qty').value;
+    if (!qty2 || isNaN(qty2) || Number(qty2) <= 0)       { fieldErr('qty', 'Valid QTY required.'); ok = false; }
+    if (!document.getElementById('patientName').value.trim()) { fieldErr('patientName', 'Patient name is required.'); ok = false; }
+    if (!document.getElementById('patientDob').value)         { fieldErr('patientDob', 'Patient DOB is required.'); ok = false; }
   }
   return ok;
 }
@@ -859,6 +834,57 @@ function saveManual() {
 
   var dateVal = document.getElementById('manualDate').value;
   if (!dateVal) { fieldErr('manualDate', 'Date is required.'); toast('error', 'Missing Date', 'Please select a date.'); return; }
+
+  // ── COMMISSION ONLY PATH (no time fields) ──────────────────────────────
+  if (isCommission()) {
+    state.isSaving = true;
+    var btn = document.querySelector('.btn-save');
+    if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
+    var today = new Date();
+    // Use date selected + midnight as placeholder ISO values
+    var parts = dateVal.split('-');
+    var entryDate = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
+    var entry = {
+      id: Date.now() + Math.random(),
+      date: entryDate.toLocaleDateString('en-US'),
+      ahCode: 'AH2503-Patient Fitting',
+      startTime: '--',
+      endTime: '--',
+      startISO: entryDate.toISOString(),
+      endISO: entryDate.toISOString(),
+      duration: '--',
+      durationMin: 0,
+      facility: '',
+      doctor:      document.getElementById('doctor').value    || '',
+      hcpc:        document.getElementById('hcpc').value        || '',
+      itemName:    document.getElementById('itemName').value    || '',
+      qty:         document.getElementById('qty').value         || '',
+      patientName: document.getElementById('patientName').value || '',
+      patientDob:  document.getElementById('patientDob').value  || '',
+      fitterNote: false,
+      par: false,
+      onCall: false,
+      addlNotes:   document.getElementById('addlNotes').value   || '',
+      fitter:      state.userName,
+      userEmail:   '',
+      location:    state.userLocation,
+      isIdle:      false,
+      isCommission: true
+    };
+    state.log.push(entry);
+    saveLog();
+    saveToSP(entry);
+    clearCommissionForm();
+    renderLog();
+    renderSummary();
+    toast('success', 'Entry Saved', 'AH2503 -- Patient Fitting');
+    setTimeout(function() {
+      state.isSaving = false;
+      if (btn) { btn.disabled = false; btn.textContent = 'Save Entry'; }
+    }, 1200);
+    return;
+  }
+  // ── END COMMISSION ONLY PATH ───────────────────────────────────────────
 
   var startISO = buildDT(dateVal, 'start');
   var endISO   = buildDT(dateVal, 'end');
@@ -1013,6 +1039,17 @@ function clearForm(prevEndDt) {
   clearErrors();
 }
 
+function clearCommissionForm() {
+  ['hcpc','itemName','patientName','addlNotes','doctor','qty'].forEach(function(id) {
+    var el = document.getElementById(id); if (el) el.value = '';
+  });
+  var hs = document.getElementById('hcpcSearch'); if (hs) hs.value = '';
+  var hd = document.getElementById('hcpcDrop');   if (hd) hd.classList.remove('open');
+  var pd = document.getElementById('patientDob'); if (pd) pd.value = '';
+  document.getElementById('manualDate').value = new Date().toISOString().split('T')[0];
+  clearErrors();
+}
+
 function saveLog() {
   try { localStorage.setItem('ah_fitterlog', JSON.stringify(state.log)); } catch(e) {}
 }
@@ -1097,11 +1134,9 @@ function renderSummary() {
   var today = new Date().toLocaleDateString('en-US');
   var tLog  = state.log.filter(function(r) { return r.date === today; });
   var entries  = tLog.filter(function(r) { return !r.isIdle; }).length;
-  var fittings = tLog.filter(function(r) { return r.ahCode.indexOf('2503') >= 0; }).length;
-  var mins     = tLog.filter(function(r) { return !r.isIdle; }).reduce(function(a,r) { return a + (r.durationMin||0); }, 0);
-  document.getElementById('sumEntries').textContent  = entries;
-
-  document.getElementById('sumTime').textContent     = fmtDur(mins * 60);
+  var mins     = tLog.filter(function(r) { return !r.isIdle && !r.isCommission; }).reduce(function(a,r) { return a + (r.durationMin||0); }, 0);
+  document.getElementById('sumEntries').textContent = entries;
+  document.getElementById('sumTime').textContent    = mins > 0 ? fmtDur(mins * 60) : (tLog.filter(function(r){return r.isCommission;}).length > 0 ? entries + ' fitting' + (entries !== 1 ? 's' : '') : '0m');
 }
 
 function exportCSV() {
@@ -1321,33 +1356,60 @@ function openEdit(id) {
   if (!entry) return;
   editingId = id;
 
-  // Populate edit form
-  document.getElementById('editAhCode').value = entry.ahCode;
-  // Convert date from "3/4/2026" back to "2026-03-04"
-  var dp = new Date(entry.date);
-  var y = dp.getFullYear(), m = String(dp.getMonth()+1).padStart(2,'0'), d = String(dp.getDate()).padStart(2,'0');
-  document.getElementById('editDate').value = y + '-' + m + '-' + d;
+  if (entry.isCommission) {
+    // Show simplified commission edit view
+    document.getElementById('editAhCode').value = entry.ahCode;
+    var dp = new Date(entry.date);
+    var y = dp.getFullYear(), m = String(dp.getMonth()+1).padStart(2,'0'), d = String(dp.getDate()).padStart(2,'0');
+    document.getElementById('editDate').value = y + '-' + m + '-' + d;
+    document.getElementById('editDoctorCo').value      = entry.doctor || '';
+    document.getElementById('editHcpcCo').value        = entry.hcpc || '';
+    document.getElementById('editHcpcSearchCo').value  = entry.hcpc || '';
+    document.getElementById('editQtyCo').value         = entry.qty || '';
+    document.getElementById('editItemNameCo').value    = entry.itemName || '';
+    document.getElementById('editPatientNameCo').value = entry.patientName || '';
+    document.getElementById('editPatientDobCo').value  = entry.patientDob || '';
+    document.getElementById('editNotes').value         = entry.addlNotes || '';
+    // Hide time/facility/checkboxes for commission entries
+    ['edit-cond-facility','edit-cond-patient'].forEach(function(id){ document.getElementById(id).classList.remove('vis'); });
+    document.getElementById('edit-time-section').style.display  = 'none';
+    document.getElementById('edit-oncall-row').style.display    = 'none';
+    document.getElementById('edit-ah-section').style.display    = 'none';
+    document.getElementById('edit-commission-notice').style.display = 'flex';
+    document.getElementById('edit-commission-fields').style.display = 'flex';
+    document.getElementById('editOverlay').classList.remove('hidden');
+    return;
+  }
 
-  // Parse start time
+  // Standard entry edit
+  document.getElementById('edit-time-section').style.display  = '';
+  document.getElementById('edit-oncall-row').style.display    = '';
+  document.getElementById('edit-ah-section').style.display    = '';
+  document.getElementById('edit-commission-notice').style.display = 'none';
+  document.getElementById('edit-commission-fields').style.display = 'none';
+
+  document.getElementById('editAhCode').value = entry.ahCode;
+  var dp2 = new Date(entry.date);
+  var y2 = dp2.getFullYear(), m2 = String(dp2.getMonth()+1).padStart(2,'0'), d2 = String(dp2.getDate()).padStart(2,'0');
+  document.getElementById('editDate').value = y2 + '-' + m2 + '-' + d2;
+
   var st = parseTime12(entry.startTime);
   document.getElementById('editStartHr').value   = st.hr;
   document.getElementById('editStartMin').value  = st.min;
   document.getElementById('editStartAmPm').value = st.ampm;
 
-  // Parse end time
   var et = parseTime12(entry.endTime);
   document.getElementById('editEndHr').value   = et.hr;
   document.getElementById('editEndMin').value  = et.min;
   document.getElementById('editEndAmPm').value = et.ampm;
 
-  // Facility
   populateEditFacilities();
-  document.getElementById('editFacility').value  = entry.facility || '';
-  document.getElementById('editDoctor').value    = entry.doctor || '';
-  document.getElementById('editHcpc').value      = entry.hcpc || '';
-  document.getElementById('editHcpcSearch').value = entry.hcpc || '';
-  document.getElementById('editQty').value       = entry.qty || '';
-  document.getElementById('editItemName').value  = entry.itemName || '';
+  document.getElementById('editFacility').value    = entry.facility || '';
+  document.getElementById('editDoctor').value      = entry.doctor || '';
+  document.getElementById('editHcpc').value        = entry.hcpc || '';
+  document.getElementById('editHcpcSearch').value  = entry.hcpc || '';
+  document.getElementById('editQty').value         = entry.qty || '';
+  document.getElementById('editItemName').value    = entry.itemName || '';
   document.getElementById('editPatientName').value = entry.patientName || '';
   document.getElementById('editPatientDob').value  = entry.patientDob || '';
   document.getElementById('editFitterNote').checked = entry.fitterNote || false;
@@ -1403,25 +1465,51 @@ function saveEdit() {
   var idx = state.log.findIndex(function(r) { return String(r.id) === String(editingId); });
   if (idx < 0) { toast('error','Error','Entry not found.'); return; }
 
+  var entry   = state.log[idx];
+  var dateVal = document.getElementById('editDate').value;
+  if (!dateVal) { toast('error','Missing Date','Please select a date.'); return; }
+
+  // ── COMMISSION ONLY SAVE PATH ──────────────────────────────────────────
+  if (entry.isCommission) {
+    var parts = dateVal.split('-');
+    var entryDate = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
+    var pName = document.getElementById('editPatientNameCo').value.trim();
+    var pDob  = document.getElementById('editPatientDobCo').value;
+    if (!pName) { toast('error','Missing Fields','Patient name is required.'); return; }
+    if (!pDob)  { toast('error','Missing Fields','Patient DOB is required.'); return; }
+    entry.date        = entryDate.toLocaleDateString('en-US');
+    entry.startISO    = entryDate.toISOString();
+    entry.endISO      = entryDate.toISOString();
+    entry.doctor      = document.getElementById('editDoctorCo').value || '';
+    entry.hcpc        = document.getElementById('editHcpcCo').value   || '';
+    entry.qty         = document.getElementById('editQtyCo').value    || '';
+    entry.itemName    = document.getElementById('editItemNameCo').value    || '';
+    entry.patientName = pName;
+    entry.patientDob  = pDob;
+    entry.addlNotes   = document.getElementById('editNotes').value || '';
+    saveLog();
+    closeEdit();
+    renderLog();
+    renderSummary();
+    toast('success','Entry Updated','Changes saved.');
+    return;
+  }
+  // ── END COMMISSION PATH ────────────────────────────────────────────────
+
   var ah      = document.getElementById('editAhCode').value;
   var code    = ah.split('-')[0];
-  var dateVal = document.getElementById('editDate').value;
-  if (!ah)      { toast('error','Missing Fields','AH Code is required.'); return; }
-  if (!dateVal) { toast('error','Missing Date','Please select a date.'); return; }
+  if (!ah) { toast('error','Missing Fields','AH Code is required.'); return; }
 
   var startISO = buildEditDT(dateVal, 'editStart');
   var endISO   = buildEditDT(dateVal, 'editEnd');
   var startDt  = new Date(startISO);
   var endDt    = new Date(endISO);
-  var now      = new Date();
 
-  // Hard block: end before/equal to start
   if (endDt <= startDt) {
     toast('error','Invalid Times','End time must be after start — check your AM/PM selection.');
     return;
   }
 
-  // Hard block: duplicate (same AH code + start time on a different entry)
   var startISO_str = startDt.toISOString();
   var isDuplicate = state.log.some(function(r, i) {
     return i !== idx && r.ahCode === ah && r.startISO === startISO_str;
@@ -1431,10 +1519,9 @@ function saveEdit() {
     return;
   }
 
-  // Soft warning: overlapping time range (same day, excluding self)
   var dateStr = startDt.toLocaleDateString('en-US');
   var overlaps = state.log.filter(function(r, i) {
-    if (i === idx) return false;
+    if (i === idx || r.isCommission) return false;
     if (r.date !== dateStr) return false;
     var rs = new Date(r.startISO), re = new Date(r.endISO);
     return startDt < re && endDt > rs;
@@ -1447,7 +1534,6 @@ function saveEdit() {
   }
   state._editOverlapAcknowledged = false;
 
-  // Soft warning: over 4 hours
   var durHrs = (endDt - startDt) / 3600000;
   if (durHrs > 4) {
     var warnEl = document.getElementById('editTimeWarn');
@@ -1466,8 +1552,6 @@ function saveEdit() {
   if (warnEl2) warnEl2.classList.remove('show');
 
   var elapsed = (endDt - startDt) / 1000;
-  var entry   = state.log[idx];
-
   entry.ahCode      = ah;
   entry.date        = startDt.toLocaleDateString('en-US');
   entry.startTime   = fmtTime(startDt);
@@ -1481,8 +1565,17 @@ function saveEdit() {
   entry.hcpc        = code === 'AH2503' ? document.getElementById('editHcpc').value : '';
   entry.qty         = code === 'AH2503' ? document.getElementById('editQty').value : '';
   entry.itemName    = code === 'AH2503' ? document.getElementById('editItemName').value : '';
-  entry.patientName = code === 'AH2503' ? document.getElementById('editPatientName').value : '';
-  entry.patientDob  = code === 'AH2503' ? document.getElementById('editPatientDob').value : '';
+  if (code === 'AH2503') {
+    var epName = document.getElementById('editPatientName').value.trim();
+    var epDob  = document.getElementById('editPatientDob').value;
+    if (!epName) { toast('error','Missing Fields','Patient name is required.'); return; }
+    if (!epDob)  { toast('error','Missing Fields','Patient DOB is required.'); return; }
+    entry.patientName = epName;
+    entry.patientDob  = epDob;
+  } else {
+    entry.patientName = '';
+    entry.patientDob  = '';
+  }
   entry.fitterNote  = document.getElementById('editFitterNote').checked;
   entry.par         = document.getElementById('editPar').checked;
   entry.onCall      = document.getElementById('editOnCall').checked;
